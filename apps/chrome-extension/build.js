@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 const distDir = path.join(__dirname, "dist");
+const publicIconsDir = path.join(__dirname, "public/icons");
+const distIconsDir = path.join(distDir, "icons");
 
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
@@ -14,6 +16,16 @@ if (!fs.existsSync(distDir)) {
 // Copy manifest.json and popup.html to dist/
 fs.copyFileSync(path.join(__dirname, "manifest.json"), path.join(distDir, "manifest.json"));
 fs.copyFileSync(path.join(__dirname, "popup.html"), path.join(distDir, "popup.html"));
+
+// Copy icons
+if (fs.existsSync(publicIconsDir)) {
+  if (!fs.existsSync(distIconsDir)) {
+    fs.mkdirSync(distIconsDir, { recursive: true });
+  }
+  for (const file of fs.readdirSync(publicIconsDir)) {
+    fs.copyFileSync(path.join(publicIconsDir, file), path.join(distIconsDir, file));
+  }
+}
 
 const isWatch = process.argv.includes("--watch");
 

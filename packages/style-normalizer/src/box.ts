@@ -18,7 +18,8 @@ export function parsePx(val: string): number {
 
 export function parseCornerRadius(
   radiusStr: string,
-  individual?: { tl?: string; tr?: string; br?: string; bl?: string }
+  individual?: { tl?: string; tr?: string; br?: string; bl?: string },
+  referenceSize?: { width: number; height: number }
 ): CornerRadius | undefined {
   if (individual && (individual.tl || individual.tr || individual.br || individual.bl)) {
     const tl = parsePx(individual.tl || "0");
@@ -32,6 +33,13 @@ export function parseCornerRadius(
 
   if (!radiusStr || radiusStr === "0px" || radiusStr === "0") {
     return undefined;
+  }
+
+  // Handle circular percentage border-radius (e.g. 50% for avatars)
+  if (radiusStr.includes("%")) {
+    const minDim = referenceSize ? Math.min(referenceSize.width, referenceSize.height) : 100;
+    const r = Math.round((minDim / 2));
+    return { topLeft: r, topRight: r, bottomRight: r, bottomLeft: r, isUniform: true };
   }
 
   const parts = radiusStr.trim().split(/\s+/).map(parsePx);
@@ -75,6 +83,14 @@ export function parseBorders(
       style: borderStyle === "dashed" ? "dashed" : borderStyle === "dotted" ? "dotted" : "solid",
     },
   ];
+}
+
+export function parseBackgroundImageUrl(bgImageStr: string): string | undefined {
+  if (!bgImageStr || bgImageStr === "none" || !bgImageStr.includes("url(")) {
+    return undefined;
+  }
+  const match = bgImageStr.match(/url\(\s*["']?([^"')]+)["']?\s*\)/);
+  return match ? match[1] : undefined;
 }
 
 export function parseLinearGradient(bgImageStr: string): LinearGradientPaint | undefined {
@@ -130,7 +146,6 @@ export function parseLinearGradient(bgImageStr: string): LinearGradientPaint | u
   const rawStops = parts.slice(stopStartIndex);
 
   rawStops.forEach((rawStop, index) => {
-    // rawStop could be: "red 20%", "rgba(0,0,0,0.5)", "#ffffff 50%"
     const tokens = rawStop.trim().split(/\s+/);
     let colorToken = tokens[0];
     let posToken = tokens[1];

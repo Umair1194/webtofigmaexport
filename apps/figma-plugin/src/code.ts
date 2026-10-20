@@ -7,9 +7,26 @@ import {
   validateSceneGraph,
 } from "@frameforge/scene-graph";
 
-figma.showUI(__html__, { width: 440, height: 560, themeColors: true });
+figma.showUI(__html__, { width: 440, height: 580, themeColors: true });
 
 const loadedFonts = new Set<string>();
+
+function mapWeightToStyleName(weight: number, isItalic = false): string {
+  let style = "Regular";
+  if (weight >= 900) style = "Black";
+  else if (weight >= 800) style = "Extra Bold";
+  else if (weight >= 700) style = "Bold";
+  else if (weight >= 600) style = "Semi Bold";
+  else if (weight >= 500) style = "Medium";
+  else if (weight >= 300) style = "Light";
+  else if (weight >= 200) style = "Extra Light";
+  else if (weight >= 100) style = "Thin";
+
+  if (isItalic) {
+    return style === "Regular" ? "Italic" : `${style} Italic`;
+  }
+  return style;
+}
 
 async function ensureFontLoaded(family: string, style: string, warnings: string[]): Promise<FontName> {
   const fontKey = `${family}::${style}`;
@@ -23,19 +40,28 @@ async function ensureFontLoaded(family: string, style: string, warnings: string[
     loadedFonts.add(fontKey);
     return targetFont;
   } catch {
-    // Try fallback font styles
+    // Try standard Regular or Bold in same family first
     try {
-      const fallbackFont: FontName = { family: "Inter", style };
-      await figma.loadFontAsync(fallbackFont);
-      warnings.push(`Substituted font "${family} ${style}" with "Inter ${style}".`);
-      loadedFonts.add(`${fallbackFont.family}::${fallbackFont.style}`);
-      return fallbackFont;
+      const fallbackStyle = style.includes("Bold") ? "Bold" : "Regular";
+      const sameFamFont: FontName = { family, style: fallbackStyle };
+      await figma.loadFontAsync(sameFamFont);
+      loadedFonts.add(`${family}::${fallbackStyle}`);
+      return sameFamFont;
     } catch {
-      const defaultFont: FontName = { family: "Inter", style: "Regular" };
-      await figma.loadFontAsync(defaultFont);
-      warnings.push(`Substituted font "${family} ${style}" with "Inter Regular".`);
-      loadedFonts.add("Inter::Regular");
-      return defaultFont;
+      // Fallback to Inter
+      try {
+        const interFont: FontName = { family: "Inter", style };
+        await figma.loadFontAsync(interFont);
+        warnings.push(`Substituted font "${family} ${style}" with "Inter ${style}".`);
+        loadedFonts.add(`Inter::${style}`);
+        return interFont;
+      } catch {
+        const defaultFont: FontName = { family: "Inter", style: "Regular" };
+        await figma.loadFontAsync(defaultFont);
+        warnings.push(`Substituted font "${family} ${style}" with "Inter Regular".`);
+        loadedFonts.add("Inter::Regular");
+        return defaultFont;
+      }
     }
   }
 }
@@ -53,7 +79,6 @@ function convertPaint(paint: FFPaint): Paint | null {
     const rad = ((paint.angleDegrees || 180) - 90) * (Math.PI / 180);
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
-    // 2x3 affine transformation matrix mapping unit square to gradient line
     const transform: Transform = [
       [cos, sin, (1 - cos - sin) / 2],
       [-sin, cos, (1 + sin - cos) / 2],
@@ -66,7 +91,7 @@ function convertPaint(paint: FFPaint): Paint | null {
 
     return {
       type: "GRADIENT_LINEAR",
-      transform,
+      gradientTransform: transform,
       gradientStops,
       visible: paint.visible !== false,
     };
@@ -154,7 +179,7 @@ async function buildFigmaNode(
         frame.strokeAlign = s.alignment;
       }
 
-      // Effects (Drop Shadow)
+      // Effects (Drop / Inner Shadow)
       if (node.effects && node.effects.length > 0) {
         const effects: Effect[] = [];
         for (const eff of node.effects) {
@@ -183,7 +208,7 @@ async function buildFigmaNode(
         }
       }
 
-      // Auto Layout inference application
+      // Auto Layout application
       if (node.autoLayout && node.autoLayout.layoutMode !== "NONE") {
         frame.layoutMode = node.autoLayout.layoutMode;
         frame.itemSpacing = node.autoLayout.itemSpacing;
@@ -197,6 +222,8 @@ async function buildFigmaNode(
         if (node.autoLayout.counterAxisAlignItems) {
           frame.counterAxisAlignItems = node.autoLayout.counterAxisAlignItems as any;
         }
+        frame.primaryAxisSizingMode = "AUTO";
+        frame.counterAxisSizingMode = "AUTO";
       }
 
       return frame;
@@ -211,15 +238,8 @@ async function buildFigmaNode(
       text.opacity = node.opacity;
       text.visible = node.visible;
 
-      // Font weight to Figma style name
-      let styleName = "Regular";
-      if (node.style.fontWeight >= 700) styleName = "Bold";
-      else if (node.style.fontWeight >= 600) styleName = "Semi Bold";
-      else if (node.style.fontWeight >= 500) styleName = "Medium";
-
-      if (node.style.fontStyle === "italic") {
-        styleName = styleName === "Regular" ? "Italic" : `${styleName} Italic`;
-      }
+      const isItalic = node.style.fontStyle === "italic";
+      const styleName = mapWeightToStyleName(node.style.fontWeight, isItalic);
 
       const fontName = await ensureFontLoaded(node.style.fontFamily, styleName, stats.warnings);
       text.fontName = fontName;
@@ -239,6 +259,20 @@ async function buildFigmaNode(
           value: node.style.letterSpacing.value,
           unit: node.style.letterSpacing.unit,
         };
+      }
+
+      // Text Alignment & Cases
+      if (node.style.textAlignHorizontal) {
+        text.textAlignHorizontal = node.style.textAlignHorizontal;
+      }
+      if (node.style.textAlignVertical) {
+        text.textAlignVertical = node.style.textAlignVertical;
+      }
+      if (node.style.textCase) {
+        text.textCase = node.style.textCase;
+      }
+      if (node.style.textDecoration) {
+        text.textDecoration = node.style.textDecoration;
       }
 
       // Fills
@@ -343,7 +377,6 @@ async function buildFigmaNode(
           frame.fills = [{ type: "SOLID", color: { r: 0.9, g: 0.9, b: 0.9 } }];
         }
       } else {
-        // Placeholder fill
         frame.fills = [{ type: "SOLID", color: { r: 0.2, g: 0.2, b: 0.25 } }];
       }
 
@@ -365,7 +398,6 @@ async function buildFigmaNode(
       frame.strokes = [{ type: "SOLID", color: { r: 0.38, g: 0.45, b: 0.55 } }];
       frame.strokeWeight = 1;
 
-      // Add descriptive label inside placeholder frame
       try {
         const labelFont = await ensureFontLoaded("Inter", "Regular", stats.warnings);
         const label = figma.createText();
@@ -377,7 +409,7 @@ async function buildFigmaNode(
         label.y = 8;
         frame.appendChild(label);
       } catch {
-        // ignore text label failure
+        // ignore label text error
       }
 
       return frame;

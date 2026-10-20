@@ -14,6 +14,7 @@ import {
   ViewportMeta,
 } from "@frameforge/scene-graph";
 import {
+  parseBackgroundImageUrl,
   parseBorders,
   parseBoxShadows,
   parseColor,
@@ -39,7 +40,6 @@ export function generateLayerName(element: Element): string {
   const firstClass = element.classList && element.classList.length > 0 ? `.${element.classList[0]}` : "";
   const role = element.getAttribute("role") ? `[role=${element.getAttribute("role")}]` : "";
 
-  // Semantic mappings
   if (tag === "button" || role === "[role=button]") return `Button ${firstClass || id}`.trim();
   if (tag === "header") return "Header";
   if (tag === "nav") return "Navigation";
@@ -99,7 +99,7 @@ export function captureSubtree(
   const opacity = parseFloat(computed.opacity) || 1;
   const visible = computed.visibility !== "hidden" && computed.display !== "none";
 
-  const cornerRadius = parseCornerRadius(computed.borderRadius);
+  const cornerRadius = parseCornerRadius(computed.borderRadius, undefined, { width, height });
   const strokes = parseBorders(computed);
   const effects = parseBoxShadows(computed.boxShadow);
   const fills = parseFills(computed);
@@ -241,6 +241,47 @@ export function captureSubtree(
   // 7. General container / element with children
   const children: SceneNode[] = [];
 
+  // Check CSS background-image url(...)
+  const bgImageUrl = parseBackgroundImageUrl(computed.backgroundImage);
+  if (bgImageUrl) {
+    state.diagnostics.totalImages++;
+    children.push({
+      id: `${id}-bg-img`,
+      name: "Background Image",
+      type: "IMAGE",
+      bounds: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+      visible: true,
+      opacity: 1,
+      srcUrl: bgImageUrl,
+      objectFit: "COVER",
+    } as ImageNode);
+  }
+
+  // Check Pseudo-element ::before
+  try {
+    const beforeComputed = window.getComputedStyle(rootElement, "::before");
+    const beforeContent = beforeComputed.content;
+    if (beforeContent && beforeContent !== "none" && beforeContent !== "normal") {
+      const cleanContent = beforeContent.replace(/^["']|["']$/g, "").trim();
+      if (cleanContent) {
+        state.diagnostics.totalTextNodes++;
+        children.push({
+          id: `${id}-pseudo-before`,
+          name: "::before",
+          type: "TEXT",
+          bounds: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+          visible: true,
+          opacity: 1,
+          characters: cleanContent,
+          style: parseTypography(beforeComputed),
+          fills: [{ type: "SOLID", color: parseColor(beforeComputed.color), visible: true }],
+        } as TextNode);
+      }
+    }
+  } catch {
+    // pseudo element read ignored
+  }
+
   // Direct text nodes inside this element
   for (const childNode of Array.from(rootElement.childNodes)) {
     if (childNode.nodeType === Node.TEXT_NODE) {
@@ -250,7 +291,6 @@ export function captureSubtree(
         const typography = parseTypography(computed);
         const textColor = parseColor(computed.color);
 
-        // Approximate text bounds
         const range = document.createRange();
         range.selectNode(childNode);
         const textRect = range.getBoundingClientRect();
@@ -277,7 +317,7 @@ export function captureSubtree(
     } else if (childNode.nodeType === Node.ELEMENT_NODE) {
       const childSceneNode = captureSubtree(
         childNode as Element,
-        rect.left, // make child bounds relative to parent container
+        rect.left,
         rect.top,
         options,
         state
@@ -288,7 +328,7 @@ export function captureSubtree(
     }
   }
 
-  // Check if we can infer Auto Layout
+  // Auto Layout inference
   const autoLayout = options.inferAutoLayout !== false
     ? inferAutoLayout(computed, children.length)
     : undefined;
@@ -338,6 +378,17 @@ export function capturePage(
   let originX = 0;
   let originY = 0;
 
+  const docWidth = Math.max(
+    document.body?.scrollWidth || 0,
+    document.documentElement?.scrollWidth || 0,
+    window.innerWidth
+  );
+  const docHeight = Math.max(
+    document.body?.scrollHeight || 0,
+    document.documentElement?.scrollHeight || 0,
+    window.innerHeight
+  );
+
   if (mode === "SELECTED_ELEMENT") {
     const r = targetElement.getBoundingClientRect();
     originX = r.left;
@@ -353,6 +404,9 @@ export function capturePage(
 
   const rootSceneNode = captureSubtree(targetElement, originX, originY, options, state);
 
+  const rootWidth = mode === "FULL_PAGE" ? docWidth : window.innerWidth;
+  const rootHeight = mode === "FULL_PAGE" ? docHeight : window.innerHeight;
+
   const rootFrame: FrameNode =
     rootSceneNode && rootSceneNode.type === "FRAME"
       ? (rootSceneNode as FrameNode)
@@ -363,8 +417,8 @@ export function capturePage(
           bounds: {
             x: 0,
             y: 0,
-            width: window.innerWidth,
-            height: window.innerHeight,
+            width: rootWidth,
+            height: rootHeight,
           },
           visible: true,
           opacity: 1,

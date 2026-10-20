@@ -2,6 +2,7 @@
   "name": "frameforge-monorepo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "FrameForge: Production-grade Web-to-Editable-Figma capture engine, Chrome extension, and Figma plugin",
   "workspaces": [
     "packages/*",
@@ -13,6 +14,8 @@
     "build:extension": "node apps/chrome-extension/build.js",
     "build": "npm run build:figma && npm run build:extension",
     "test": "vitest run",
+    "typecheck": "tsc -b",
+    "generate:icons": "node scripts/generate-icons.js",
     "serve:fixture": "npx serve fixtures/test-site -p 3000"
   },
   "devDependencies": {

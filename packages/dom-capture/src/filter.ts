@@ -42,7 +42,7 @@ export function shouldSkipElement(
   }
 
   // Inside an SVG element: child shapes should be serialized together with the <svg> root
-  if (element.ownerSVGElement) {
+  if ("ownerSVGElement" in element && (element as SVGElement).ownerSVGElement) {
     return true;
   }
 

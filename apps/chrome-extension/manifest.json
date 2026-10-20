@@ -6,11 +6,24 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "contextMenus"
   ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "FrameForge: Web to Figma"
+    "default_title": "FrameForge: Web to Figma",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "background": {
     "service_worker": "dist/background.js",
@@ -21,5 +34,35 @@
       "matches": ["<all_urls>"],
       "js": ["dist/content.js"]
     }
-  ]
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "Open FrameForge popup"
+    },
+    "capture-viewport": {
+      "suggested_key": {
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
+      },
+      "description": "Quick Capture Current Viewport"
+    },
+    "select-element": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Select Element to Capture"
+    },
+    "toggle-inspect": {
+      "suggested_key": {
+        "default": "Alt+Shift+I",
+        "mac": "Alt+Shift+I"
+      },
+      "description": "Toggle In-Page Design Inspector"
+    }
+  }
 }
