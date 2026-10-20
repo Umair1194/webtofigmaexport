@@ -1,48 +1,38 @@
-# FrameForge Limitations & Technical Boundaries
+# Current limitations
 
-FrameForge is designed to be transparent and honest about browser, DOM, and Figma capabilities. Rather than failing silently or producing misleading visual glitches, known constraints are handled with explicit diagnostics.
+FrameForge converts supported DOM geometry and CSS into editable Figma nodes. Arbitrary websites are not guaranteed to reproduce perfectly.
 
----
+## Browser capture
 
-## 1. Browser & Chrome Security Boundaries
+- Internal browser pages and extension-store pages cannot be captured. File URLs need the browser's explicit extension file-access setting.
+- Full page means currently loaded DOM content. Lazy or virtualized sections must be loaded first. It does not crawl other responsive/device states.
+- Output is bounded to 2,500 nodes and 64 levels. Truncation is reported. Captures have a 30-second deadline and a cancel action.
+- Viewport output clips to the visible browser frame; the traversal may retain offscreen descendants in the editable hierarchy.
+- Shadow-root children are captured, but distributed slot behavior is not fully reproduced. Embedded frames are captured when Chrome permits extension access, with up to four nested frame captures and a shared node budget. Inaccessible frames remain placeholders; reload existing tabs after updating the extension.
+- Canvas snapshots and video posters are imported when accessible. Tainted canvases and inaccessible media remain placeholders.
 
-### Restricted Chrome Pages
-- Webpages starting with `chrome://`, `chrome-extension://`, `devtools://`, or the Chrome Web Store (`chromewebstore.google.com`) strictly disallow content script injection by Chrome's security model.
-- **Handling**: The FrameForge popup displays a polite error banner: *"Chrome restricts extension access on internal browser and Web Store pages. Please navigate to a standard HTTP or HTTPS website."*
+## Visual fidelity
 
-### Cross-Origin Iframes
-- Browser Same-Origin Policy (SOP) prevents scripts from inspecting `contentDocument` or `window.getComputedStyle` on third-party frames (e.g. YouTube embeds, Stripe iframes, third-party ads).
-- **Handling**: FrameForge captures the outer geometry of the `<iframe>`, sets its placeholder background, and attaches an `UnsupportedNode` with `reason: "CROSS_ORIGIN_IFRAME"`.
+- Available fonts may differ from browser web fonts. Native paste embeds shaped glyph outlines on editable TEXT nodes using bundled Inter faces. Other captured font families are substituted with Inter and reported. Original web-font files are not collected. Wrapping, ligatures and mixed-style inline text can still differ.
+- Eligible text-only inline markup consolidates into one editable paragraph with style ranges, measured soft wraps and explicit BR newlines. Painted/positioned inline elements and block-structured text retain their hierarchy. Source subpixel bounds are preserved; display:contents wrappers use virtual bounds. Original font substitution and text editing can still change wrapping.
+- Fresh captures retain measured line fragments, including inline continuation offsets, and initial native rendering fits fallback glyph widths to those fragments. Captures made before 1.2.1 lack this metadata and need recapturing for accurate inline wrapping. Text uses measured boxes. Simple Auto Layout is retained when measured geometry agrees; aligned non-overlapping block flows also derive Auto Layout, using spacers for unequal gaps. Regular wrapped rows and aligned grid-like rows can become nested Auto Layout frames. Absolute/fixed decorations and background-image layers stay absolute without blocking the surrounding flow. Mixed inline wrapping, overlapping and irregular layouts preserve measured positions; empty/decorative wrappers do not need Auto Layout. Differing child insets can use editable row/column wrappers; CSS-reordered stacks use measured visual order. Recapture with 1.4.0 for the latest layout and gradient metadata.
+- Simple backdrop-filter:blur(px) is retained as native background blur; combined backdrop filters remain limited. Translucent uniform borders share one paint. Different border colours per edge currently use the first shared colour and produce a warning.
+- CSS transforms, complex stacking, blend modes, masks, advanced filters/gradients and complex generated content are not fully reproduced. Some conditions produce warnings; not every unsupported feature is detected.
+- Text-bearing ::before content uses approximate geometry. Decorative pseudo-elements and ::after are not fully reconstructed.
+- Borders/radii/images are editable, but dashed borders, elliptical corners, complex per-edge rounded corners, background positioning/repetition and object-fit:none can differ.
+- Linear and common radial gradients preserve geometry, layered fills, alpha and supported stop positions. Oklab/Lab/linear-sRGB interpolation uses bounded intermediate stops. Wide-gamut colours are clipped to sRGB; conic/repeating gradients, interpolation hints, some radial positioning and resized backgrounds remain limited. Mixed image/gradient stacking and blend modes require adjustment.
+- CSS background images are currently approximated as covering the element. Native SVG conversion supports basic paths, circles/ellipses, rectangles, lines and polygons with transforms. Native SVG linear/radial paints support local definitions, transforms and inherited stops. Repeating spread, focal radial geometry, masks/clipping, external sprites and unsupported elements remain limited and can produce warnings.
 
-### Canvas & WebGL Content
-- `<canvas>` elements and 3D WebGL scenes contain raster or shader pipelines rather than semantic DOM nodes.
-- **Handling**: Exported as an image/snapshot fill when accessible, or tagged with `reason: "CANVAS_ELEMENT"`.
+## Images and resources
 
----
+- Page image requests use same-origin session credentials. Cross-origin requests omit credentials and can retry through an extension background broker under existing host permissions. Protected/hotlink-restricted images, unavailable blobs, unreadable loaded images and decode failures can still produce warnings/placeholders.
+- Browser-only raster formats are converted to still PNG with a 2048px maximum side and the per-image byte limit. Animation is not retained; PNG/JPEG inputs keep their original bytes.
+- Downloads have four concurrent workers, URL caching, a 10-second per-request timeout and a 2 MB per-image limit. Embedded data is also bounded by per-capture and serialized-storage budgets.
+- Native export rejects captures above 200,000 text characters before shaping. Shaping within the limit is synchronous and cannot be cancelled mid-operation.
+- Figma may reject image encodings it does not support. SVG image data is imported as vectors when parseable.
 
-## 2. Figma Import Boundaries
+## Delivery and verification
 
-### Font Availability & System Fonts
-- Figma requires fonts to be registered in its font library before assigning text characters or typographic properties via `figma.loadFontAsync()`.
-- If a web font (e.g. custom corporate webfont or Adobe Typekit) is not installed locally on the user's machine or present in Google Fonts, Figma's API throws an error when attempting to load it.
-- **Handling**: FrameForge catches font load failures, gracefully substitutes `Inter` (or `Roboto`), and lists the substituted fonts in the Import Summary report.
-
-### CSS Grid vs. Figma Auto Layout
-- CSS Grid allows overlapping items, dynamic template areas (`grid-template-areas`), implicit tracks, and subgrids. Figma's Auto Layout currently supports 1D flows (Horizontal / Vertical) with wrapping.
-- **Handling**: Simple 1D flex layouts are inferred as native Auto Layout. Complex multi-track or overlapping CSS Grid layouts are positioned using exact absolute positioning (`layoutMode = "NONE"`) to guarantee pixel-perfect visual fidelity.
-
-### Advanced CSS Filters & Blend Modes
-- CSS supports filters like `invert()`, `sepia()`, `contrast()`, `saturate()`, and `hue-rotate()`. Figma supports Layer Blur, Background Blur, and standard blend modes (Multiply, Screen, Overlay, etc.).
-- **Handling**: Blurs and supported blend modes are converted directly. Complex color matrix filters (`hue-rotate`, `invert`) are approximated or noted in diagnostics.
-
-### CORS-Restricted Remote Images
-- Images served without `Access-Control-Allow-Origin: *` cannot be converted to base64 data URIs inside the webpage canvas due to canvas tainting.
-- **Handling**: The image element geometry is preserved, and a placeholder image with the remote URL reference is supplied. The asset inventory flags the asset as requiring CORS bypass or manual download.
-
----
-
-## 3. Form Inputs & Dynamic States
-
-### Redacted Form Values
-- Passwords, credit card inputs, personal data, and typed text values are redacted during extraction.
-- The input container styling, border, background, and placeholder text are preserved.
+- Copy to Figma writes native binary clipboard HTML and requires no Figma plugin. The private clipboard format has no stability guarantee; an upstream encoder upgrade may be needed when Figma changes it. JSON remains available for the optional legacy importer. SVG copy is a separate limited fallback.
+- Chrome/Chromium packaging is provided; Firefox is not packaged or verified. No account, billing or device-emulation service is implemented.
+- Automated tests use DOM/Figma/Chrome mocks for host APIs. Real browser DOM capture has been smoke-tested locally, but actual installed-extension and Figma canvas acceptance remain required. Native clipboard structure is tested by decoding; actual Figma rendering and installed-extension cross-origin acceptance remain unverified. See [verification](FIXES_AND_VERIFICATION.md).

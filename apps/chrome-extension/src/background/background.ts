@@ -1,52 +1,45 @@
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("FrameForge Chrome Extension installed.");
+import { installAssetBroker } from './asset-broker.js';
+installAssetBroker();
+import { installCopyBroker } from "./copy-broker.js";
+installCopyBroker();
+import { installCaptureStore } from "./capture-store.js";
+installCaptureStore();
+import { installFrameBroker } from "./frame-broker.js";
+installFrameBroker();
+async function runCaptureAction(tabId: number, type: string) {
   try {
-    chrome.contextMenus.create({
-      id: "frameforge-capture-element",
-      title: "FrameForge: Select & Capture Element",
-      contexts: ["all"],
-    });
-    chrome.contextMenus.create({
-      id: "frameforge-capture-viewport",
-      title: "FrameForge: Capture Current Viewport",
-      contexts: ["all"],
-    });
-    chrome.contextMenus.create({
-      id: "frameforge-toggle-inspect",
-      title: "FrameForge: Toggle In-Page Inspector",
-      contexts: ["all"],
-    });
-  } catch (err) {
-    // context menu already created
+    const ping = await chrome.tabs.sendMessage(tabId, { type: "PING" }, { frameId: 0 }).catch(() => null);
+    if (ping?.status !== "PONG") await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ["content.js"] });
+    await chrome.action.setBadgeText({ tabId, text: "…" });
+    const response = await chrome.tabs.sendMessage(tabId, { type, ...(type === "EXECUTE_CAPTURE" ? { payload: { captureMode: "VIEWPORT" } } : {}) }, { frameId: 0 });
+    if (response?.status === "error") throw new Error(response.error);
+    await chrome.action.setBadgeText({ tabId, text: type === "EXECUTE_CAPTURE" ? "✓" : "" });
+    const title = type === 'EXECUTE_CAPTURE' ? response?.copied ? 'Copied — paste on the Figma canvas' : 'Capture saved — open FrameForge to copy' : type === 'TOGGLE_INSPECT_MODE' ? response?.active ? 'Inspector on — press Esc to close' : 'Inspector off' : 'Choose an element — press Esc to cancel';
+    await chrome.action.setBadgeBackgroundColor({tabId,color:'#355d42'});
+    await chrome.action.setTitle({ tabId, title: 'FrameForge: '+title });
+  } catch (error) {
+    await chrome.action.setBadgeText({ tabId, text: "!" });
+    await chrome.action.setBadgeBackgroundColor({ tabId, color: "#b91c1c" });
+    await chrome.action.setTitle({ tabId, title: error instanceof Error ? error.message : "FrameForge could not access this page. Open the extension for help." });
   }
+}
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    for (const [id, title] of [
+      ["frameforge-capture-element", "FrameForge: Select & Capture Element"],
+      ["frameforge-capture-viewport", "FrameForge: Capture Current Viewport"],
+      ["frameforge-toggle-inspect", "FrameForge: Toggle In-Page Inspector"],
+    ]) chrome.contextMenus.create({ id, title, contexts: ["all"] });
+  });
 });
-
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.id) return;
-  if (info.menuItemId === "frameforge-capture-element") {
-    chrome.tabs.sendMessage(tab.id, { type: "START_ELEMENT_PICKER" });
-  } else if (info.menuItemId === "frameforge-capture-viewport") {
-    chrome.tabs.sendMessage(tab.id, {
-      type: "EXECUTE_CAPTURE",
-      payload: { captureMode: "VIEWPORT" },
-    });
-  } else if (info.menuItemId === "frameforge-toggle-inspect") {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_INSPECT_MODE" });
-  }
+  const type = info.menuItemId === "frameforge-capture-element" ? "START_ELEMENT_PICKER" : info.menuItemId === "frameforge-capture-viewport" ? "EXECUTE_CAPTURE" : "TOGGLE_INSPECT_MODE";
+  void runCaptureAction(tab.id, type);
 });
-
-chrome.commands.onCommand.addListener(async (command) => {
+chrome.commands.onCommand.addListener(async command => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
-
-  if (command === "capture-viewport") {
-    chrome.tabs.sendMessage(tab.id, {
-      type: "EXECUTE_CAPTURE",
-      payload: { captureMode: "VIEWPORT" },
-    });
-  } else if (command === "select-element") {
-    chrome.tabs.sendMessage(tab.id, { type: "START_ELEMENT_PICKER" });
-  } else if (command === "toggle-inspect") {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_INSPECT_MODE" });
-  }
+  const types: Record<string, string> = { "capture-viewport": "EXECUTE_CAPTURE", "select-element": "START_ELEMENT_PICKER", "toggle-inspect": "TOGGLE_INSPECT_MODE" };
+  if (types[command]) void runCaptureAction(tab.id, types[command]);
 });

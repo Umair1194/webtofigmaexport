@@ -44,21 +44,19 @@ function makeChunk(type, data) {
 }
 
 function generatePng(size) {
-  // Generate RGBA image data with purple-to-indigo gradient and white "F" shape
+  // Generate the same neutral frame mark used in the extension header.
   const rowLength = size * 4 + 1; // 1 filter byte per row
   const rawData = Buffer.alloc(rowLength * size);
 
   for (let y = 0; y < size; y++) {
     const rowOffset = y * rowLength;
     rawData[rowOffset] = 0; // Filter type None
-    const t = y / size;
+
 
     for (let x = 0; x < size; x++) {
       const pixelOffset = rowOffset + 1 + x * 4;
-      // Gradient background: from #6366f1 (99, 102, 241) to #a855f7 (168, 85, 247)
-      let r = Math.round(99 + (168 - 99) * t);
-      let g = Math.round(102 + (85 - 102) * t);
-      let b = Math.round(241 + (247 - 241) * t);
+      // Flat charcoal background, aligned with the popup brand.
+      let r = 32, g = 40, b = 32;
       let a = 255;
 
       // Rounded corner mask
@@ -72,9 +70,9 @@ function generatePng(size) {
       // Draw stylized "F" glyph in the center if inside
       const nx = x / size;
       const ny = y / size;
-      const isVerticalStem = nx >= 0.28 && nx <= 0.44 && ny >= 0.24 && ny <= 0.76;
-      const isTopBar = nx >= 0.28 && nx <= 0.72 && ny >= 0.24 && ny <= 0.38;
-      const isMidBar = nx >= 0.28 && nx <= 0.62 && ny >= 0.46 && ny <= 0.58;
+      const isVerticalStem = ((nx >= 0.30 && nx <= 0.38) || (nx >= 0.62 && nx <= 0.70)) && ny >= 0.16 && ny <= 0.84;
+      const isTopBar = ny >= 0.30 && ny <= 0.38 && nx >= 0.16 && nx <= 0.84;
+      const isMidBar = ny >= 0.62 && ny <= 0.70 && nx >= 0.16 && nx <= 0.84;
 
       if (a > 0 && (isVerticalStem || isTopBar || isMidBar)) {
         r = 255;

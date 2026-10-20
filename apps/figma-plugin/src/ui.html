@@ -5,13 +5,13 @@
   <title>FrameForge Importer</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
+      --bg: var(--figma-color-bg, #0f172a);
+      --card-bg: var(--figma-color-bg-secondary, #1e293b);
       --accent: #6366f1;
       --accent-hover: #4f46e5;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #334155;
+      --text: var(--figma-color-text, #f8fafc);
+      --text-muted: var(--figma-color-text-secondary, #94a3b8);
+      --border: var(--figma-color-border, #334155);
       --success: #10b981;
       --warning: #f59e0b;
       --error: #ef4444;
@@ -160,6 +160,10 @@
       font-size: 13px;
     }
 
+    button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    button:disabled { opacity: .55; cursor: wait; }
+    textarea { width:100%; min-height:90px; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font:12px/1.5 monospace; resize:vertical; }
+    [hidden] { display:none !important; }
     .warnings-list {
       margin-top: 10px;
       font-size: 11px;
@@ -180,120 +184,110 @@
   </div>
 
   <div class="card">
-    <button class="btn btn-primary" id="btn-paste-clipboard">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-      </svg>
-      Import from Clipboard
-    </button>
-
-    <div class="dropzone" id="dropzone">
-      <span>Drop .json capture file here or click to browse</span>
-      <input type="file" id="file-input" accept=".json" style="display: none;">
+    <p class="subtitle" style="margin-bottom:12px">1. Capture a page with the FrameForge extension.<br>2. Copy for plugin or save JSON.<br>3. Load it here, review, then import.</p>
+    <button class="btn btn-primary" id="btn-paste-clipboard">Paste capture</button>
+    <button class="dropzone" id="dropzone" style="width:100%;background:transparent;font:inherit">Drop a capture JSON file here or browse</button>
+    <input type="file" id="file-input" accept=".json,application/json" hidden>
+    <div style="margin-top:12px" id="paste-area">
+      <label for="json-input">Paste here with ⌘V / Ctrl+V</label><textarea id="json-input" spellcheck="false" placeholder="Click here and press ⌘V / Ctrl+V"></textarea>
+      <button class="btn" id="btn-review">Review capture</button>
     </div>
   </div>
-
-  <div class="status-box" id="status-box"></div>
-
+  <div class="card" id="preview" hidden>
+    <strong id="preview-title"></strong><p class="subtitle" id="preview-detail"></p>
+    <ul class="warnings-list" id="preview-warnings"></ul>
+    <button class="btn btn-primary" id="btn-import" style="margin-top:12px">Import editable layers</button>
+  </div>
+  <button class="btn" id="btn-cancel" hidden>Cancel import</button>
+  <div class="status-box" id="status-box" role="status" aria-live="polite"></div>
   <script>
-    const btnPaste = document.getElementById('btn-paste-clipboard');
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('file-input');
-    const statusBox = document.getElementById('status-box');
-
-    function setStatus(type, html) {
-      statusBox.className = `status-box active status-${type}`;
-      statusBox.innerHTML = html;
+    const byId = id => document.getElementById(id);
+    const btnPaste = byId('btn-paste-clipboard'), dropzone = byId('dropzone'), fileInput = byId('file-input'), statusBox = byId('status-box');
+    let pending = null, busy = false, requestId = null, responseTimer = null;
+    function setStatus(type, message) { statusBox.className = 'status-box active status-' + type; statusBox.textContent = message; }
+    function setBusy(value) {
+      busy = value;
+      for (const id of ['btn-paste-clipboard','dropzone','btn-review','btn-import','file-input','json-input']) byId(id).disabled = value;
+      byId('btn-cancel').hidden = !value; byId('btn-cancel').disabled = false;
     }
-
-    async function processJsonString(jsonStr) {
+    function review(text) {
+      if (busy) return;
+      pending = null; byId('preview').hidden = true;
       try {
-        const payload = JSON.parse(jsonStr);
-        setStatus('progress', 'Parsing scene graph and pre-loading fonts...');
-        parent.postMessage({ pluginMessage: { type: 'IMPORT_SCENE_GRAPH', payload } }, '*');
-      } catch (err) {
-        setStatus('error', `Failed to parse JSON: ${err.message}`);
-      }
+        if (new TextEncoder().encode(text).byteLength > 16 * 1024 * 1024) throw new Error('Capture exceeds 16 MB. Select a smaller section.');
+        const payload = JSON.parse(text);
+        if (!payload || payload.root?.type !== 'FRAME' || !payload.root.bounds) throw new Error('Use a FrameForge capture JSON file.');
+        const stack = [payload.root], area = payload.root.bounds.width * payload.root.bounds.height;
+        let examined = 0;
+        while (stack.length && examined++ < 5000) {
+          const node = stack.pop();
+          if (node?.visible === false || node?.opacity === 0) continue;
+          if (node?.type === 'UNSUPPORTED' && node.reason === 'CROSS_ORIGIN_IFRAME' && area > 0 && node.bounds?.width * node.bounds?.height >= area * .8) throw new Error('This file contains a full-page iframe placeholder, not the embedded design. Reload the updated extension and website, then capture again.');
+          if (node?.type === 'FRAME' && Array.isArray(node.children)) stack.push(...node.children);
+        }
+        pending = payload;
+        byId('preview-title').textContent = payload.title || 'Captured page';
+        byId('preview-detail').textContent = Math.round(payload.root.bounds.width) + ' × ' + Math.round(payload.root.bounds.height) + ' px · ' + (payload.captureMode || 'Capture');
+        const list = byId('preview-warnings'); list.replaceChildren();
+        for (const warning of (Array.isArray(payload.diagnostics?.warnings) ? payload.diagnostics.warnings : []).slice(0, 100)) { const li = document.createElement('li'); li.textContent = String(warning); list.appendChild(li); }
+        byId('preview').hidden = false;
+        setStatus('progress', 'Capture ready to import. Fonts and images may require substitutions; any changes are reported after import.');
+      } catch (error) { setStatus('error', error.message); }
     }
-
     btnPaste.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        if (!text || !text.trim().startsWith('{')) {
-          setStatus('error', 'Clipboard does not contain a valid FrameForge scene graph JSON. Please capture a page with the FrameForge Chrome extension first.');
-          return;
-        }
-        await processJsonString(text);
-      } catch (err) {
-        setStatus('error', 'Unable to read clipboard. You can drag and drop the downloaded .json file below instead.');
-      }
+      try { if (!navigator.clipboard?.readText) throw new Error('Paste needed'); review(await navigator.clipboard.readText()); }
+      catch { byId('json-input').focus(); setStatus('progress', 'Press ⌘V / Ctrl+V in the paste field. Figma may block automatic clipboard reads; keyboard paste works without that permission.'); }
     });
-
-    dropzone.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => processJsonString(evt.target.result);
-        reader.readAsText(file);
-      }
+    byId('json-input').addEventListener('input', () => {
+      if (busy) return;
+      pending = null; byId('preview').hidden = true;
+      setStatus('progress', 'Review the edited capture before importing.');
     });
-
-    dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
+    byId('btn-review').addEventListener('click', () => review(byId('json-input').value));
+    byId('btn-import').addEventListener('click', () => {
+      if (!pending || busy) return;
+      requestId = 'import-' + (globalThis.crypto?.randomUUID?.() || Date.now() + '-' + Math.random().toString(36).slice(2));
+      setBusy(true); setStatus('progress', 'Validating capture…');
+      responseTimer = setTimeout(() => { if (busy) setStatus('progress', 'Waiting for Figma. You can cancel this import if it does not respond.'); }, 10000);
+      parent.postMessage({ pluginMessage: { type:'IMPORT_SCENE_GRAPH', payload:pending, requestId } }, '*');
     });
-
+    byId('btn-cancel').addEventListener('click', () => { byId('btn-cancel').disabled = true; setStatus('progress', 'Cancelling and removing incomplete layers…'); parent.postMessage({ pluginMessage: { type:'CANCEL_IMPORT', requestId } }, '*'); });
+    dropzone.addEventListener('click', () => { if (!busy) fileInput.click(); });
+    async function readFile(file) {
+      if (!file || busy) return;
+      if (file.size > 16 * 1024 * 1024) { setStatus('error', 'File exceeds 16 MB. Capture a smaller section.'); return; }
+      try { review(await file.text()); } catch { setStatus('error', 'Unable to read file. Please choose it again.'); }
+      fileInput.value = '';
+    }
+    fileInput.addEventListener('change', () => readFile(fileInput.files[0]));
+    dropzone.addEventListener('dragover', event => { event.preventDefault(); if (!busy) dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => processJsonString(evt.target.result);
-        reader.readAsText(file);
-      }
+    dropzone.addEventListener('drop', event => { event.preventDefault(); dropzone.classList.remove('dragover'); readFile(event.dataTransfer.files[0]); });
+    document.addEventListener('paste', event => {
+      if (busy || !event.clipboardData) return;
+      event.preventDefault();
+      const text = event.clipboardData.getData('text/plain');
+      byId('json-input').value = text;
+      review(text);
     });
-
-    window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
-      if (!msg) return;
-
-      if (msg.type === 'IMPORT_PROGRESS') {
-        setStatus('progress', msg.message);
-      } else if (msg.type === 'IMPORT_SUCCESS') {
-        const s = msg.stats;
-        let warningsHtml = '';
-        if (s.warnings && s.warnings.length > 0) {
-          warningsHtml = `
-            <div style="margin-top: 8px; font-weight: 600;">Font / Asset Diagnostics:</div>
-            <ul class="warnings-list">
-              ${s.warnings.map(w => `<li>${w}</li>`).join('')}
-            </ul>
-          `;
-        }
-
-        setStatus('success', `
-          <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px;">
-            🎉 Successfully reconstructed in ${s.durationMs}ms!
-          </div>
-          <div><strong>${s.title || 'Page'}</strong></div>
-          <div class="stats-grid">
-            <div class="stat-pill">Total Nodes: <span class="stat-val">${s.totalNodes}</span></div>
-            <div class="stat-pill">Text Layers: <span class="stat-val">${s.textNodes}</span></div>
-            <div class="stat-pill">Frames & Auto Layout: <span class="stat-val">${s.frames}</span></div>
-            <div class="stat-pill">Images & Vectors: <span class="stat-val">${s.images + s.vectors}</span></div>
-          </div>
-          ${warningsHtml}
-        `);
-      } else if (msg.type === 'IMPORT_ERROR') {
-        setStatus('error', `Import Error: ${msg.error}`);
+    window.onmessage = event => {
+      // Figma Desktop can forward sandbox messages with a null or wrapper source.
+      // Correlate the response to our unpredictable request instead of Window identity.
+      const msg = event.data?.pluginMessage;
+      if (!msg || !requestId || msg.requestId !== requestId) return;
+      if (!busy) return;
+      clearTimeout(responseTimer);
+      if (msg.type === 'IMPORT_PROGRESS') setStatus('progress', msg.message);
+      if (msg.type === 'IMPORT_ERROR') { setBusy(false); setStatus('error', msg.error); }
+      if (msg.type === 'IMPORT_SUCCESS') {
+        setBusy(false); const stats = msg.stats;
+        setStatus('success', 'Imported ' + stats.totalNodes + ' layers in ' + stats.durationMs + 'ms. ' + stats.textNodes + ' text layers · ' + stats.autoLayoutFrames + ' Auto Layout frames.');
+        const list = document.createElement('ul'); list.className = 'warnings-list';
+        for (const warning of stats.warnings || []) { const li = document.createElement('li'); li.textContent = warning; list.appendChild(li); }
+        statusBox.appendChild(list);
       }
     };
+    byId('json-input').focus();
   </script>
 </body>
 </html>

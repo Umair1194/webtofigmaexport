@@ -59,14 +59,27 @@ export function analyzeSceneGraph(doc: SceneGraphDocument): DesignIntelligenceRe
   const accessibilityIssues: AccessibilityIssue[] = [];
   let totalCheckedText = 0;
 
-  function walk(node: SceneNode, parentBg?: any) {
+  function walk(node: SceneNode, parentBg?: any, parentComplex = false) {
+    if (!node.visible || node.opacity === 0) return;
+    if(node.type==='TEXT'&&node.runs?.length){
+      for(const run of node.runs)if(node.characters.slice(run.start,run.end).trim())walk({...node,runs:undefined,characters:node.characters.slice(run.start,run.end),style:run.style,fills:run.fills},parentBg,parentComplex);
+      return;
+    }
     let currentBg = parentBg;
+    let complex = parentComplex || node.opacity < 1;
 
     // Fills
     if ("fills" in node && Array.isArray(node.fills)) {
-      for (const fill of node.fills) {
+      for (const fill of [...node.fills].reverse()) {
+        if(fill.visible===false)continue;
+        if(fill.type!=="SOLID") {
+          for(const stop of fill.stops){if(stop.color.a<=0)continue;const hex=rgbaToHex(stop.color),existing=colorMap.get(hex);if(existing)existing.count++;else colorMap.set(hex,{count:1,rgba:stop.color});}
+        }
         if (fill.type === "SOLID" && fill.color && fill.color.a > 0) {
-          currentBg = fill.color;
+          if (node.type !== "TEXT") {
+            const a = fill.color.a;
+            currentBg = currentBg ? { r: fill.color.r * a + currentBg.r * (1 - a), g: fill.color.g * a + currentBg.g * (1 - a), b: fill.color.b * a + currentBg.b * (1 - a), a: 1 } : fill.color;
+          }
           const hex = rgbaToHex(fill.color);
           const existing = colorMap.get(hex);
           if (existing) {
@@ -78,14 +91,14 @@ export function analyzeSceneGraph(doc: SceneGraphDocument): DesignIntelligenceRe
       }
     }
 
+    if ("fills" in node && node.fills?.some(f => f.type !== "SOLID")) complex = true;
+    if (node.type === "FRAME" && node.children.some(c => c.type === "IMAGE" || c.type === "VECTOR")) complex = true;
+
     // Text Nodes
     if (node.type === "TEXT") {
       const textNode = node as TextNode;
       const fg = textNode.fills[0]?.type === "SOLID" ? textNode.fills[0].color : { r: 0, g: 0, b: 0, a: 1 };
-      const hex = rgbaToHex(fg);
-      const existing = colorMap.get(hex);
-      if (existing) existing.count++;
-      else colorMap.set(hex, { count: 1, rgba: fg });
+
 
       // Typography inventory
       const key = `${textNode.style.fontFamily}-${textNode.style.fontWeight}-${textNode.style.fontSize}`;
@@ -106,7 +119,7 @@ export function analyzeSceneGraph(doc: SceneGraphDocument): DesignIntelligenceRe
       // Accessibility contrast check
       if (currentBg) {
         totalCheckedText++;
-        const contrast = checkWCAGCompliance(fg, currentBg, textNode.style.fontSize, textNode.style.fontWeight);
+        const contrast = checkWCAGCompliance(fg, currentBg, textNode.style.fontSize, textNode.style.fontWeight, complex);
         if (!contrast.aaPass) {
           accessibilityIssues.push({
             nodeId: textNode.id,
@@ -140,7 +153,7 @@ export function analyzeSceneGraph(doc: SceneGraphDocument): DesignIntelligenceRe
     // Recurse children
     if (node.type === "FRAME" && "children" in node) {
       for (const child of node.children) {
-        walk(child, currentBg);
+        walk(child, currentBg, complex);
       }
     }
   }

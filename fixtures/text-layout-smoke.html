@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>FrameForge browser text-layout regression</title>
+<style>
+  body {font:16px/24px Arial;background:#f7f3ed;padding:32px}
+  #fixture {width:680px;padding:30px;background:white}
+  h1 {font:700 32px/40px Arial;margin:0 0 8px}
+  p {margin:0 0 20px}
+  .privacy {width:280px;color:white;background:#24221f;padding:24px}
+  .privacy strong {font-weight:700}
+  pre {background:#dcfce7;padding:20px;white-space:pre-wrap}
+</style>
+<section id="fixture">
+  <h1>What brings you to Petopus?</h1>
+  <p>Choose the account that fits. You can change it before you finish.</p>
+  <p class="privacy"><strong>How you sign in stays private.</strong> You choose which profiles are visible.</p>
+</section>
+<pre id="report" data-frameforge-ignore="true">Running browser fragment capture…</pre>
+<script src="probe.js"></script>

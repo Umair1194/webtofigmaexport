@@ -1,475 +1,229 @@
-import {
-  FrameNode as FFFrameNode,
-  Paint as FFPaint,
-  SceneGraphDocument,
-  SceneNode as FFSceneNode,
-  TextNode as FFTextNode,
-  validateSceneGraph,
-} from "@frameforge/scene-graph";
+import { hasDominantIframePlaceholder } from "@frameforge/shared-protocol";
+import { Paint as FFPaint, SceneGraphDocument, SceneNode as FFSceneNode, validateSceneGraph } from "@frameforge/scene-graph";
 
-figma.showUI(__html__, { width: 440, height: 580, themeColors: true });
+figma.showUI(__html__, { width: 440, height: 640, themeColors: true });
 
-const loadedFonts = new Set<string>();
-
-function mapWeightToStyleName(weight: number, isItalic = false): string {
-  let style = "Regular";
-  if (weight >= 900) style = "Black";
-  else if (weight >= 800) style = "Extra Bold";
-  else if (weight >= 700) style = "Bold";
-  else if (weight >= 600) style = "Semi Bold";
-  else if (weight >= 500) style = "Medium";
-  else if (weight >= 300) style = "Light";
-  else if (weight >= 200) style = "Extra Light";
-  else if (weight >= 100) style = "Thin";
-
-  if (isItalic) {
-    return style === "Regular" ? "Italic" : `${style} Italic`;
-  }
-  return style;
+export function mapWeightToStyleName(weight: number, isItalic = false): string {
+  const styles = ["Thin", "Extra Light", "Light", "Regular", "Medium", "Semi Bold", "Bold", "Extra Bold", "Black"];
+  const style = styles[Math.max(0, Math.min(8, Math.round(weight / 100) - 1))];
+  return isItalic ? style === "Regular" ? "Italic" : `${style} Italic` : style;
 }
-
-async function ensureFontLoaded(family: string, style: string, warnings: string[]): Promise<FontName> {
-  const fontKey = `${family}::${style}`;
-  if (loadedFonts.has(fontKey)) {
-    return { family, style };
-  }
-
-  try {
-    const targetFont: FontName = { family, style };
-    await figma.loadFontAsync(targetFont);
-    loadedFonts.add(fontKey);
-    return targetFont;
-  } catch {
-    // Try standard Regular or Bold in same family first
-    try {
-      const fallbackStyle = style.includes("Bold") ? "Bold" : "Regular";
-      const sameFamFont: FontName = { family, style: fallbackStyle };
-      await figma.loadFontAsync(sameFamFont);
-      loadedFonts.add(`${family}::${fallbackStyle}`);
-      return sameFamFont;
-    } catch {
-      // Fallback to Inter
-      try {
-        const interFont: FontName = { family: "Inter", style };
-        await figma.loadFontAsync(interFont);
-        warnings.push(`Substituted font "${family} ${style}" with "Inter ${style}".`);
-        loadedFonts.add(`Inter::${style}`);
-        return interFont;
-      } catch {
-        const defaultFont: FontName = { family: "Inter", style: "Regular" };
-        await figma.loadFontAsync(defaultFont);
-        warnings.push(`Substituted font "${family} ${style}" with "Inter Regular".`);
-        loadedFonts.add("Inter::Regular");
-        return defaultFont;
-      }
+const fonts = new Map<string, Promise<FontName>>();
+async function ensureFontLoaded(family: string, style: string, warnings: Set<string>): Promise<FontName> {
+  const key = `${family}::${style}`;
+  if (!fonts.has(key)) fonts.set(key, (async () => {
+    const candidates = [{ family, style }, { family, style: style.includes("Bold") ? "Bold" : "Regular" }, { family: "Inter", style }, { family: "Inter", style: "Regular" }];
+    for (const candidate of candidates) {
+      try { await figma.loadFontAsync(candidate); return candidate; } catch { /* try next available face */ }
     }
-  }
+    throw new Error(`No usable font is available for ${family} ${style}.`);
+  })());
+  try {
+    const resolved = await fonts.get(key)!;
+    if (resolved.family !== family || resolved.style !== style) warnings.add(`Substituted ${family} ${style} with ${resolved.family} ${resolved.style}.`);
+    return resolved;
+  } catch (error) { fonts.delete(key); throw error; }
 }
-
-function convertPaint(paint: FFPaint): Paint | null {
-  if (paint.type === "SOLID") {
-    return {
-      type: "SOLID",
-      color: { r: paint.color.r, g: paint.color.g, b: paint.color.b },
-      opacity: paint.opacity ?? paint.color.a ?? 1,
-      visible: paint.visible !== false,
-    };
-  }
-  if (paint.type === "GRADIENT_LINEAR") {
-    const rad = ((paint.angleDegrees || 180) - 90) * (Math.PI / 180);
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    const transform: Transform = [
-      [cos, sin, (1 - cos - sin) / 2],
-      [-sin, cos, (1 + sin - cos) / 2],
-    ];
-
-    const gradientStops: ColorStop[] = paint.stops.map((s) => ({
-      position: s.position,
-      color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a },
-    }));
-
-    return {
-      type: "GRADIENT_LINEAR",
-      gradientTransform: transform,
-      gradientStops,
-      visible: paint.visible !== false,
-    };
-  }
-  return null;
+function convertPaint(paint: FFPaint): Paint {
+  if (paint.type === "SOLID") return { type: "SOLID", color: { r: paint.color.r, g: paint.color.g, b: paint.color.b }, opacity: paint.opacity ?? paint.color.a, visible: paint.visible !== false };
+  const rad = ((paint.angleDegrees ?? 180) - 90) * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const t=paint.gradientTransform;
+  return { type: paint.type, gradientTransform: t?[[t.m00,t.m01,t.m02],[t.m10,t.m11,t.m12]]:[[cos, sin, (1 - cos - sin) / 2], [-sin, cos, (1 + sin - cos) / 2]], gradientStops: paint.stops, visible: paint.visible !== false };
 }
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const clean = base64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
-  const binaryString = atob(clean);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+interface ImportContext {
+  requestId?: string;
+  cancelWaiters: Set<() => void>;
+  created: SceneNode[];
+  cancelled: boolean;
+  stats: { totalNodes: number; textNodes: number; frames: number; autoLayoutFrames: number; images: number; vectors: number; unsupported: number };
+  warnings: Set<string>;
+  images: Map<string, Image>;
+}
+let active: ImportContext | null = null;
+function send(ctx: ImportContext, message: Record<string, unknown>) { figma.ui.postMessage({ ...message, requestId: ctx.requestId }); }
+function waitForFont<T>(promise: Promise<T>, ctx: ImportContext): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const cancel = () => { cleanup(); reject(new Error("Import cancelled.")); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error("Font loading timed out. Check Figma's font service, then retry.")); }, 15000);
+    const cleanup = () => { clearTimeout(timer); ctx.cancelWaiters.delete(cancel); };
+    ctx.cancelWaiters.add(cancel);
+    promise.then(value => { cleanup(); resolve(value); }, error => { cleanup(); reject(error); });
+    if (ctx.cancelled) cancel();
+  });
+}
+function track<T extends SceneNode>(ctx: ImportContext, node: T): T { ctx.created.push(node); return node; }
+function applyBase(target: SceneNode, node: FFSceneNode) {
+  target.name = node.name; target.x = node.bounds.x; target.y = node.bounds.y;
+  if ("opacity" in target) target.opacity = node.opacity; target.visible = node.visible;
+}
+function applyShape(target: FrameNode | RectangleNode, node: FFSceneNode) {
+  if ("cornerRadius" in node && node.cornerRadius) {
+    target.topLeftRadius = node.cornerRadius.topLeft; target.topRightRadius = node.cornerRadius.topRight;
+    target.bottomRightRadius = node.cornerRadius.bottomRight; target.bottomLeftRadius = node.cornerRadius.bottomLeft;
   }
-  return bytes;
+  if ("strokes" in node && node.strokes?.length) {
+    const stroke = node.strokes[0];
+    target.strokes = [{ type: "SOLID", color: { r: stroke.color.r, g: stroke.color.g, b: stroke.color.b }, opacity: stroke.color.a }];
+    target.strokeWeight = stroke.width; target.strokeAlign = stroke.alignment || "INSIDE";
+    if (node.strokes.some(s => s.side)) {
+      target.strokeTopWeight = node.strokes.find(s => s.side === "TOP")?.width || 0;
+      target.strokeRightWeight = node.strokes.find(s => s.side === "RIGHT")?.width || 0;
+      target.strokeBottomWeight = node.strokes.find(s => s.side === "BOTTOM")?.width || 0;
+      target.strokeLeftWeight = node.strokes.find(s => s.side === "LEFT")?.width || 0;
+    }
+    if (stroke.style === "dashed") target.dashPattern = [stroke.width * 3, stroke.width * 2];
+    if (stroke.style === "dotted") target.dashPattern = [stroke.width, stroke.width];
+  }
+  if ("effects" in node && node.effects) target.effects = node.effects.map(effect => {
+    if (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW") return { ...effect, visible: effect.visible !== false, blendMode: "NORMAL" } as Effect;
+    return { ...effect, visible: effect.visible !== false } as Effect;
+  });
 }
-
-interface ImportStats {
-  totalNodes: number;
-  textNodes: number;
-  frames: number;
-  images: number;
-  vectors: number;
-  unsupported: number;
-  warnings: string[];
+function getImage(dataUrl: string, ctx: ImportContext): Image {
+  const cached = ctx.images.get(dataUrl); if (cached) return cached;
+  const match = dataUrl.match(/^data:(image\/[\w.+-]+)(;base64)?,([\s\S]*)$/i);
+  if (!match) throw new Error("Unsupported image data URL");
+  if (match[1].toLowerCase() === "image/svg+xml") throw new Error("SVG image must be imported as a vector");
+  if (!match[2]) throw new Error("Image data must use base64 encoding");
+  const image = figma.createImage(figma.base64Decode(match[3])); ctx.images.set(dataUrl, image); return image;
 }
-
-async function buildFigmaNode(
-  node: FFSceneNode,
-  stats: ImportStats
-): Promise<SceneNode | null> {
-  stats.totalNodes++;
-
-  const width = Math.max(1, node.bounds.width);
-  const height = Math.max(1, node.bounds.height);
-
+async function buildNode(node: FFSceneNode, ctx: ImportContext): Promise<SceneNode> {
+  if (ctx.cancelled) throw new Error("Import cancelled.");
+  ctx.stats.totalNodes++;
+  if (ctx.stats.totalNodes % 50 === 0) {
+    send(ctx, { type: "IMPORT_PROGRESS", message: `Creating layers… ${ctx.stats.totalNodes}` });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    if (ctx.cancelled) throw new Error("Import cancelled.");
+  }
+  const width = Math.max(0.01, node.bounds.width), height = Math.max(0.01, node.bounds.height);
+  let result: SceneNode;
   switch (node.type) {
     case "FRAME": {
-      stats.frames++;
-      const frame = figma.createFrame();
-      frame.name = node.name || "Frame";
-      frame.x = node.bounds.x;
-      frame.y = node.bounds.y;
-      frame.resize(width, height);
-      frame.opacity = node.opacity;
-      frame.visible = node.visible;
-      frame.clipsContent = Boolean(node.clipsContent);
-
-      // Fills
-      if (node.fills && node.fills.length > 0) {
-        const paints: Paint[] = [];
-        for (const f of node.fills) {
-          const converted = convertPaint(f);
-          if (converted) paints.push(converted);
-        }
-        frame.fills = paints;
-      } else {
-        frame.fills = [];
-      }
-
-      // Corner radius
-      if (node.cornerRadius) {
-        if (node.cornerRadius.isUniform) {
-          frame.cornerRadius = node.cornerRadius.topLeft;
-        } else {
-          frame.topLeftRadius = node.cornerRadius.topLeft;
-          frame.topRightRadius = node.cornerRadius.topRight;
-          frame.bottomRightRadius = node.cornerRadius.bottomRight;
-          frame.bottomLeftRadius = node.cornerRadius.bottomLeft;
+      ctx.stats.frames++;
+      const frame = track(ctx, figma.createFrame()); result = frame;
+      frame.resize(width, height); frame.clipsContent = !!node.clipsContent; frame.fills = node.fills.map(convertPaint); applyShape(frame, node);
+      if (node.strokes?.some(s => JSON.stringify(s.color) !== JSON.stringify(node.strokes![0].color))) {
+        frame.strokes = [];
+        for (const stroke of node.strokes) {
+          const border = track(ctx, figma.createRectangle());
+          const vertical = stroke.side === "LEFT" || stroke.side === "RIGHT";
+          border.name = "Border " + (stroke.side || "TOP"); border.resize(vertical ? Math.max(.01, stroke.width) : width, vertical ? height : Math.max(.01, stroke.width));
+          border.fills = [{ type: "SOLID", color: { r: stroke.color.r, g: stroke.color.g, b: stroke.color.b }, opacity: stroke.color.a }];
+          frame.appendChild(border); border.x = stroke.side === "RIGHT" ? width - stroke.width : 0; border.y = stroke.side === "BOTTOM" ? height - stroke.width : 0;
         }
       }
-
-      // Strokes
-      if (node.strokes && node.strokes.length > 0) {
-        const s = node.strokes[0];
-        frame.strokes = [
-          {
-            type: "SOLID",
-            color: { r: s.color.r, g: s.color.g, b: s.color.b },
-            opacity: s.color.a,
-          },
-        ];
-        frame.strokeWeight = s.width;
-        frame.strokeAlign = s.alignment;
+      const children: { source: FFSceneNode; output: SceneNode }[] = [];
+      for (const child of node.children) { const output = await buildNode(child, ctx); frame.appendChild(output); children.push({ source: child, output }); }
+      if (node.autoLayout && node.autoLayout.layoutMode !== "NONE" && frame.children.length === children.length) {
+        const a = node.autoLayout;
+        frame.layoutMode = a.layoutMode; frame.itemSpacing = a.itemSpacing;
+        frame.paddingTop = a.paddingTop; frame.paddingRight = a.paddingRight; frame.paddingBottom = a.paddingBottom; frame.paddingLeft = a.paddingLeft;
+        frame.primaryAxisAlignItems = a.primaryAxisAlignItems || "MIN"; frame.counterAxisAlignItems = a.counterAxisAlignItems || "MIN";
+        frame.primaryAxisSizingMode = "FIXED"; frame.counterAxisSizingMode = "FIXED";
+        frame.layoutWrap = a.layoutWrap || "NO_WRAP";
+        frame.resizeWithoutConstraints(width, height);
+        // Keep native Auto Layout only when it reproduces the measured browser geometry.
+        const changed = children.some(({ source: c, output: o }) => Math.abs(o.x - c.bounds.x) > 1 || Math.abs(o.y - c.bounds.y) > 1 || Math.abs(o.width - c.bounds.width) > 1 || Math.abs(o.height - c.bounds.height) > 1);
+        if (changed) {
+          frame.layoutMode = "NONE";
+          for (const { source: c, output: o } of children) { if ("resize" in o) o.resize(Math.max(0.01, c.bounds.width), Math.max(0.01, c.bounds.height)); o.x = c.bounds.x; o.y = c.bounds.y; }
+          frame.resizeWithoutConstraints(width, height);
+          ctx.warnings.add(`Preserved measured positioning for ${node.name}; inferred Auto Layout would change its appearance.`);
+        } else ctx.stats.autoLayoutFrames++;
       }
-
-      // Effects (Drop / Inner Shadow)
-      if (node.effects && node.effects.length > 0) {
-        const effects: Effect[] = [];
-        for (const eff of node.effects) {
-          if (eff.type === "DROP_SHADOW" || eff.type === "INNER_SHADOW") {
-            effects.push({
-              type: eff.type,
-              color: { r: eff.color.r, g: eff.color.g, b: eff.color.b, a: eff.color.a },
-              offset: eff.offset,
-              radius: eff.radius,
-              spread: eff.spread,
-              visible: eff.visible !== false,
-              blendMode: "NORMAL",
-            });
-          }
-        }
-        frame.effects = effects;
-      }
-
-      // Recursively build children
-      if (node.children && node.children.length > 0) {
-        for (const child of node.children) {
-          const childFigmaNode = await buildFigmaNode(child, stats);
-          if (childFigmaNode) {
-            frame.appendChild(childFigmaNode);
-          }
-        }
-      }
-
-      // Auto Layout application
-      if (node.autoLayout && node.autoLayout.layoutMode !== "NONE") {
-        frame.layoutMode = node.autoLayout.layoutMode;
-        frame.itemSpacing = node.autoLayout.itemSpacing;
-        frame.paddingTop = node.autoLayout.paddingTop;
-        frame.paddingRight = node.autoLayout.paddingRight;
-        frame.paddingBottom = node.autoLayout.paddingBottom;
-        frame.paddingLeft = node.autoLayout.paddingLeft;
-        if (node.autoLayout.primaryAxisAlignItems) {
-          frame.primaryAxisAlignItems = node.autoLayout.primaryAxisAlignItems;
-        }
-        if (node.autoLayout.counterAxisAlignItems) {
-          frame.counterAxisAlignItems = node.autoLayout.counterAxisAlignItems as any;
-        }
-        frame.primaryAxisSizingMode = "AUTO";
-        frame.counterAxisSizingMode = "AUTO";
-      }
-
-      return frame;
+      break;
     }
-
     case "TEXT": {
-      stats.textNodes++;
-      const text = figma.createText();
-      text.name = node.name || "Text";
-      text.x = node.bounds.x;
-      text.y = node.bounds.y;
-      text.opacity = node.opacity;
-      text.visible = node.visible;
-
-      const isItalic = node.style.fontStyle === "italic";
-      const styleName = mapWeightToStyleName(node.style.fontWeight, isItalic);
-
-      const fontName = await ensureFontLoaded(node.style.fontFamily, styleName, stats.warnings);
-      text.fontName = fontName;
-      text.characters = node.characters || "";
-      text.fontSize = Math.max(1, node.style.fontSize);
-
-      if (node.style.lineHeight) {
-        if (node.style.lineHeight.unit === "PIXELS") {
-          text.lineHeight = { value: node.style.lineHeight.value, unit: "PIXELS" };
-        } else {
-          text.lineHeight = { value: node.style.lineHeight.value, unit: "PERCENT" };
-        }
+      ctx.stats.textNodes++;
+      const text = track(ctx, figma.createText()); result = text;
+      send(ctx, { type: "IMPORT_PROGRESS", message: `Loading font: ${node.style.fontFamily}…` });
+      try { text.fontName = await waitForFont(ensureFontLoaded(node.style.fontFamily, mapWeightToStyleName(node.style.fontWeight, node.style.fontStyle === "italic"), ctx.warnings), ctx); }
+      catch (error) { fonts.delete(`${node.style.fontFamily}::${mapWeightToStyleName(node.style.fontWeight, node.style.fontStyle === "italic")}`); throw error; }
+      if (ctx.cancelled) throw new Error("Import cancelled.");
+      text.fontSize = node.style.fontSize; text.characters = node.characters;
+      if (node.style.lineHeight) text.lineHeight = node.style.lineHeight;
+      if (node.style.letterSpacing) text.letterSpacing = node.style.letterSpacing;
+      text.textAlignHorizontal = node.style.textAlignHorizontal || "LEFT"; text.textAlignVertical = node.style.textAlignVertical || "TOP";
+      text.textCase = node.style.textCase || "ORIGINAL"; text.textDecoration = node.style.textDecoration || "NONE";
+      text.fills = node.fills.map(convertPaint);
+      for(const run of node.runs||[]){
+        const font=await waitForFont(ensureFontLoaded(run.style.fontFamily,mapWeightToStyleName(run.style.fontWeight,run.style.fontStyle==='italic'),ctx.warnings),ctx);
+        text.setRangeFontName(run.start,run.end,font);text.setRangeFontSize(run.start,run.end,run.style.fontSize);
+        text.setRangeFills(run.start,run.end,run.fills.map(convertPaint));
+        text.setRangeTextDecoration(run.start,run.end,run.style.textDecoration||'NONE');
+        if(run.style.lineHeight)text.setRangeLineHeight(run.start,run.end,run.style.lineHeight);
+        if(run.style.letterSpacing)text.setRangeLetterSpacing(run.start,run.end,run.style.letterSpacing);
       }
-
-      if (node.style.letterSpacing) {
-        text.letterSpacing = {
-          value: node.style.letterSpacing.value,
-          unit: node.style.letterSpacing.unit,
-        };
-      }
-
-      // Text Alignment & Cases
-      if (node.style.textAlignHorizontal) {
-        text.textAlignHorizontal = node.style.textAlignHorizontal;
-      }
-      if (node.style.textAlignVertical) {
-        text.textAlignVertical = node.style.textAlignVertical;
-      }
-      if (node.style.textCase) {
-        text.textCase = node.style.textCase;
-      }
-      if (node.style.textDecoration) {
-        text.textDecoration = node.style.textDecoration;
-      }
-
-      // Fills
-      if (node.fills && node.fills.length > 0) {
-        const paints: Paint[] = [];
-        for (const f of node.fills) {
-          const converted = convertPaint(f);
-          if (converted) paints.push(converted);
-        }
-        text.fills = paints;
-      }
-
-      return text;
+      text.textAutoResize = "NONE"; text.resize(width, height);
+      break;
     }
-
     case "RECTANGLE": {
-      const rect = figma.createRectangle();
-      rect.name = node.name || "Rectangle";
-      rect.x = node.bounds.x;
-      rect.y = node.bounds.y;
-      rect.resize(width, height);
-      rect.opacity = node.opacity;
-      rect.visible = node.visible;
-
-      if (node.fills && node.fills.length > 0) {
-        const paints: Paint[] = [];
-        for (const f of node.fills) {
-          const converted = convertPaint(f);
-          if (converted) paints.push(converted);
-        }
-        rect.fills = paints;
-      }
-
-      if (node.cornerRadius) {
-        if (node.cornerRadius.isUniform) {
-          rect.cornerRadius = node.cornerRadius.topLeft;
-        } else {
-          rect.topLeftRadius = node.cornerRadius.topLeft;
-          rect.topRightRadius = node.cornerRadius.topRight;
-          rect.bottomRightRadius = node.cornerRadius.bottomRight;
-          rect.bottomLeftRadius = node.cornerRadius.bottomLeft;
-        }
-      }
-
-      if (node.strokes && node.strokes.length > 0) {
-        const s = node.strokes[0];
-        rect.strokes = [
-          {
-            type: "SOLID",
-            color: { r: s.color.r, g: s.color.g, b: s.color.b },
-            opacity: s.color.a,
-          },
-        ];
-        rect.strokeWeight = s.width;
-      }
-
-      return rect;
+      const rectangle = track(ctx, figma.createRectangle()); result = rectangle;
+      rectangle.resize(width, height); rectangle.fills = node.fills.map(convertPaint); applyShape(rectangle, node); break;
     }
-
+    case "LINE": {
+      const line = track(ctx, figma.createLine()); result = line; line.resize(width, 0);
+      if (height > width) { line.resize(height, 0); line.rotation = -90; }
+      line.strokes = node.strokes.map(s => ({ type: "SOLID", color: { r: s.color.r, g: s.color.g, b: s.color.b }, opacity: s.color.a }));
+      line.strokeWeight = node.strokes[0]?.width || 1; break;
+    }
     case "VECTOR": {
-      stats.vectors++;
-      try {
-        const vectorNode = figma.createNodeFromSvg(node.svgContent);
-        vectorNode.name = node.name || "Vector Icon";
-        vectorNode.x = node.bounds.x;
-        vectorNode.y = node.bounds.y;
-        vectorNode.opacity = node.opacity;
-        return vectorNode;
-      } catch (err) {
-        stats.warnings.push(`Could not parse vector SVG for "${node.name}".`);
-        const fallback = figma.createRectangle();
-        fallback.resize(width, height);
-        fallback.x = node.bounds.x;
-        fallback.y = node.bounds.y;
-        fallback.fills = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
-        return fallback;
-      }
+      ctx.stats.vectors++;
+      try { result = track(ctx, figma.createNodeFromSvg(node.svgContent)); result.resize(width, height); }
+      catch { const fallback = track(ctx, figma.createRectangle()); fallback.resize(width, height); result = fallback; ctx.warnings.add(`SVG could not be imported: ${node.name}.`); }
+      break;
     }
-
-    case "IMAGE": {
-      stats.images++;
-      const frame = figma.createFrame();
-      frame.name = node.name || "Image";
-      frame.x = node.bounds.x;
-      frame.y = node.bounds.y;
-      frame.resize(width, height);
-      frame.clipsContent = true;
-
-      if (node.dataUrl && node.dataUrl.startsWith("data:image")) {
-        try {
-          const bytes = base64ToUint8Array(node.dataUrl);
-          const figmaImage = figma.createImage(bytes);
-          frame.fills = [
-            {
-              type: "IMAGE",
-              scaleMode: node.objectFit === "CONTAIN" ? "FIT" : "FILL",
-              imageHash: figmaImage.hash,
-            },
-          ];
-        } catch {
-          stats.warnings.push(`Failed to decode base64 image for "${node.name}".`);
-          frame.fills = [{ type: "SOLID", color: { r: 0.9, g: 0.9, b: 0.9 } }];
-        }
-      } else {
-        frame.fills = [{ type: "SOLID", color: { r: 0.2, g: 0.2, b: 0.25 } }];
-      }
-
-      if (node.cornerRadius && node.cornerRadius.isUniform) {
-        frame.cornerRadius = node.cornerRadius.topLeft;
-      }
-
-      return frame;
-    }
-
+    case "IMAGE":
     case "UNSUPPORTED": {
-      stats.unsupported++;
-      const frame = figma.createFrame();
-      frame.name = `[${node.reason}] ${node.name}`;
-      frame.x = node.bounds.x;
-      frame.y = node.bounds.y;
-      frame.resize(width, height);
-      frame.fills = [{ type: "SOLID", color: { r: 0.12, g: 0.15, b: 0.2 } }];
-      frame.strokes = [{ type: "SOLID", color: { r: 0.38, g: 0.45, b: 0.55 } }];
-      frame.strokeWeight = 1;
-
+      if (node.type === "IMAGE") ctx.stats.images++; else ctx.stats.unsupported++;
+      const dataUrl = node.type === "IMAGE" ? node.dataUrl : node.fallbackImageUrl;
+      const frame = track(ctx, figma.createFrame()); result = frame; frame.resize(width, height); frame.clipsContent = true;
+      frame.fills = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.82 } }]; applyShape(frame, node);
       try {
-        const labelFont = await ensureFontLoaded("Inter", "Regular", stats.warnings);
-        const label = figma.createText();
-        label.fontName = labelFont;
-        label.characters = `${node.description} (${node.reason})`;
-        label.fontSize = 11;
-        label.fills = [{ type: "SOLID", color: { r: 0.7, g: 0.75, b: 0.85 } }];
-        label.x = 8;
-        label.y = 8;
-        frame.appendChild(label);
+        if (!dataUrl) throw new Error("Image data unavailable");
+        if (/^data:image\/svg\+xml[;,]/i.test(dataUrl)) {
+          const comma = dataUrl.indexOf(",");
+          const svg = dataUrl.slice(0, comma).includes(";base64") ? Array.from(figma.base64Decode(dataUrl.slice(comma + 1)), byte => String.fromCharCode(byte)).join("") : decodeURIComponent(dataUrl.slice(comma + 1));
+          const vector = track(ctx, figma.createNodeFromSvg(svg)); vector.resize(width, height); frame.appendChild(vector); vector.x = 0; vector.y = 0; frame.fills = [];
+        } else {
+          const image = getImage(dataUrl, ctx);
+          const fit = node.type === "IMAGE" ? node.objectFit : "COVER";
+          frame.fills = [{ type: "IMAGE", imageHash: image.hash, scaleMode: fit === "CONTAIN" ? "FIT" : fit === "FILL" ? "CROP" : "FILL", ...(fit === "FILL" ? { imageTransform: [[1, 0, 0], [0, 1, 0]] as Transform } : {}) }];
+          if (fit === "NONE") ctx.warnings.add(`Image object-fit:none approximated with cover: ${node.name}.`);
+        }
       } catch {
-        // ignore label text error
+        ctx.warnings.add(`${node.type === "UNSUPPORTED" ? node.description : "Missing image"}: ${node.name}.`);
       }
-
-      return frame;
+      break;
     }
-
-    default:
-      return null;
   }
+  applyBase(result!, node);
+  return result!;
 }
 
-figma.ui.onmessage = async (msg: { type: string; payload?: any }) => {
-  if (msg.type === "IMPORT_SCENE_GRAPH") {
-    const startTime = Date.now();
-    try {
-      const validation = validateSceneGraph(msg.payload);
-      if (!validation.valid || !validation.document) {
-        figma.ui.postMessage({
-          type: "IMPORT_ERROR",
-          error: `Schema validation failed: ${validation.errors.join(", ")}`,
-        });
-        return;
-      }
-
-      const doc = validation.document;
-      const stats: ImportStats = {
-        totalNodes: 0,
-        textNodes: 0,
-        frames: 0,
-        images: 0,
-        vectors: 0,
-        unsupported: 0,
-        warnings: [...validation.warnings],
-      };
-
-      figma.ui.postMessage({ type: "IMPORT_PROGRESS", message: "Creating native Figma layers..." });
-
-      const rootFigmaNode = await buildFigmaNode(doc.root, stats);
-
-      if (rootFigmaNode) {
-        figma.currentPage.appendChild(rootFigmaNode);
-        figma.viewport.scrollAndZoomIntoView([rootFigmaNode]);
-        figma.currentPage.selection = [rootFigmaNode];
-      }
-
-      const durationMs = Date.now() - startTime;
-
-      figma.ui.postMessage({
-        type: "IMPORT_SUCCESS",
-        stats: {
-          ...stats,
-          durationMs,
-          title: doc.title,
-          url: doc.url,
-        },
-      });
-    } catch (err: any) {
-      figma.ui.postMessage({
-        type: "IMPORT_ERROR",
-        error: err?.message || "An unexpected error occurred during Figma canvas reconstruction.",
-      });
-    }
-  }
+figma.ui.onmessage = async (msg: { type: string; payload?: unknown; requestId?: string }) => {
+  if (msg.type === "CANCEL_IMPORT") { if (active && (!msg.requestId || msg.requestId === active.requestId)) { active.cancelled = true; for (const cancel of [...active.cancelWaiters]) cancel(); } return; }
+  if (msg.type !== "IMPORT_SCENE_GRAPH") return;
+  if (active) { figma.ui.postMessage({ type: "IMPORT_PROGRESS", message: "An import is already running." }); return; }
+  const ctx: ImportContext = { requestId: msg.requestId, cancelWaiters: new Set(), created: [], cancelled: false, warnings: new Set(), images: new Map(), stats: { totalNodes: 0, textNodes: 0, frames: 0, autoLayoutFrames: 0, images: 0, vectors: 0, unsupported: 0 } };
+  active = ctx;
+  const started = Date.now();
+  try {
+    const validation = validateSceneGraph(msg.payload);
+    if (!validation.valid || !validation.document) throw new Error(`Invalid capture: ${validation.errors.join("; ")}`);
+    const doc: SceneGraphDocument = validation.document;
+    if (hasDominantIframePlaceholder(doc.root)) throw new Error("This capture contains an uncaptured embedded preview covering the page. Reload the updated extension and the website, then capture again. The old JSON does not contain that preview’s layers.");
+    for (const warning of [...validation.warnings, ...doc.diagnostics.warnings]) ctx.warnings.add(warning);
+    send(ctx, { type: "IMPORT_PROGRESS", message: "Loading fonts and creating editable layers…" });
+    const root = await buildNode(doc.root, ctx);
+    if (ctx.cancelled) throw new Error("Import cancelled.");
+    figma.currentPage.appendChild(root);
+    root.x = Math.round(figma.viewport.center.x - root.width / 2); root.y = Math.round(figma.viewport.center.y - root.height / 2);
+    figma.currentPage.selection = [root]; figma.viewport.scrollAndZoomIntoView([root]);
+    send(ctx, { type: "IMPORT_SUCCESS", stats: { ...ctx.stats, warnings: [...ctx.warnings], title: doc.title, durationMs: Date.now() - started } });
+  } catch (error) {
+    for (const node of ctx.created.reverse()) { if (!node.removed) node.remove(); }
+    send(ctx, { type: "IMPORT_ERROR", error: error instanceof Error ? error.message : "Import failed." });
+  } finally { active = null; }
 };

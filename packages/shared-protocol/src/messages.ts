@@ -45,3 +45,17 @@ export interface InspectHoverData {
     uncertain: boolean;
   };
 }
+
+// Old captures may contain only a full-page iframe placeholder, not its content.
+export function hasDominantIframePlaceholder(root: import("@frameforge/scene-graph").SceneNode): boolean {
+  const area = root.bounds.width * root.bounds.height;
+  if (area <= 0) return false;
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.visible || node.opacity === 0) continue;
+    if (node.type === "UNSUPPORTED" && node.reason === "CROSS_ORIGIN_IFRAME" && node.bounds.width * node.bounds.height >= area * 0.8) return true;
+    if (node.type === "FRAME") stack.push(...node.children);
+  }
+  return false;
+}

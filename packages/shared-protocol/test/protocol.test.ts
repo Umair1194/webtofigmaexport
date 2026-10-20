@@ -119,3 +119,35 @@ describe("Shared Protocol — Inspector & Docs", () => {
     expect(svg).toContain("</svg>");
   });
 });
+
+describe("Contrast regressions", () => {
+  it("evaluates text against its parent background and counts foreground once", () => {
+    const sample = structuredClone(mockDoc);
+    sample.root.fills = [{type:"SOLID",color:{r:1,g:1,b:1,a:1}}];
+    const text = sample.root.children[0] as any;
+    text.fills = [{type:"SOLID",color:{r:0,g:0,b:0,a:1}}];
+    sample.root.children = [text];
+    const analysis = analyzeSceneGraph(sample);
+    expect(analysis.accessibility.issues).toHaveLength(0);
+    expect(analysis.colors.find(c=>c.hex==="#000000")?.count).toBe(1);
+  });
+  it("marks gradient backgrounds as uncertain", () => {
+    const sample = structuredClone(mockDoc);
+    sample.root.fills = [{type:"GRADIENT_LINEAR",angleDegrees:90,stops:[{position:0,color:{r:0,g:0,b:0,a:1}},{position:1,color:{r:1,g:1,b:1,a:1}}]}];
+    sample.root.children = [sample.root.children[0]];
+    expect(analyzeSceneGraph(sample).accessibility.issues[0].contrastResult.uncertain).toBe(true);
+  });
+});
+
+it('includes visible gradient stop colours in the palette and preserves radial SVG alpha once',()=>{
+  const sample=structuredClone(mockDoc);sample.root.children=[];
+  sample.root.fills=[{type:'GRADIENT_RADIAL',angleDegrees:0,gradientTransform:{m00:1,m01:0,m02:0,m10:0,m11:1,m12:0},stops:[{position:0,color:{r:1,g:0,b:0,a:.5}},{position:1,color:{r:0,g:0,b:1,a:1}}]}];
+  const report=analyzeSceneGraph(sample);
+  expect(report.colors.map(c=>c.hex)).toContain('#ff000080');
+  expect(report.colors.map(c=>c.hex)).toContain('#0000ff');
+  const svg=sceneGraphToSvg(sample);expect(svg).toContain('<radialGradient');expect(svg).toContain('stop-color="#ff0000" stop-opacity="0.5"');
+});
+it('keeps rich-paragraph inline colours and weights in analysis',()=>{
+ const sample=structuredClone(mockDoc);const node:any=sample.root.children[0];node.type='TEXT';node.characters='Hello world';node.runs=[{start:0,end:6,style:{fontFamily:'Inter',fontWeight:400,fontSize:16},fills:[{type:'SOLID',color:{r:0,g:0,b:0,a:1}}]},{start:6,end:11,style:{fontFamily:'Inter',fontWeight:700,fontSize:16},fills:[{type:'SOLID',color:{r:0,g:1,b:0,a:1}}]}];sample.root.children=[node];
+ const report=analyzeSceneGraph(sample);expect(report.colors.map(c=>c.hex)).toContain('#00ff00');expect(report.typography.some(t=>t.weight===700)).toBe(true);
+});

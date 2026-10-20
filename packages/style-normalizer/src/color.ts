@@ -1,3 +1,5 @@
+import { converter } from 'culori';
+const toRgb=converter('rgb');
 import { RGBAColor } from "@frameforge/scene-graph";
 
 // Common CSS named colors
@@ -85,7 +87,9 @@ export function parseColor(cssColor: string): RGBAColor {
     return { r, g, b, a: Math.min(1, Math.max(0, a)) };
   }
 
-  // Fallback
+  // CSS Color 4 functions and the full named-colour set, clipped to Figma's sRGB gamut.
+  const converted=toRgb(clean);
+  if(converted){const clamp=(v:number)=>Math.max(0,Math.min(1,Number.isFinite(v)?v:0));return {r:clamp(converted.r),g:clamp(converted.g),b:clamp(converted.b),a:clamp(converted.alpha??1)};}
   return { r: 0, g: 0, b: 0, a: 1 };
 }
 

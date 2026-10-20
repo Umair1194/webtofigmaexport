@@ -18,6 +18,7 @@ export function inferAutoLayout(
   }
 
   const flexDirection = (computedStyle.flexDirection || "row").toLowerCase();
+  if (flexDirection.includes("reverse") || (computedStyle.flexWrap && computedStyle.flexWrap !== "nowrap")) return undefined;
   const isVertical = flexDirection.includes("column");
   const layoutMode: LayoutMode = isVertical ? "VERTICAL" : "HORIZONTAL";
 
@@ -60,9 +61,9 @@ export function inferAutoLayout(
     paddingLeft,
     primaryAxisAlignItems,
     counterAxisAlignItems,
-    primaryAxisSizingMode: "AUTO",
-    counterAxisSizingMode: "AUTO",
+    primaryAxisSizingMode: "FIXED",
+    counterAxisSizingMode: "FIXED",
     layoutWrap,
-    inferredConfidence: 0.95,
+    inferredConfidence: 0.8,
   };
 }

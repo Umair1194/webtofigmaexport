@@ -1,98 +1,68 @@
-# FrameForge: Web to Editable Figma
+# FrameForge — Web to Editable Figma
 
-**FrameForge** is an original, production-minded Chrome Extension and companion Figma Plugin that captures real web pages and reconstructs them into high-fidelity, natively editable Figma documents.
+A Manifest V3 Chrome extension. Capture a viewport, full loaded page or selected element, then paste directly onto the Figma canvas as editable layers.
 
-Unlike screenshot tracers or flat vector copiers, FrameForge produces:
-- **True Semantic Hierarchy**: Native Figma `FrameNode`, `TextNode`, `RectangleNode`, `VectorNode`, and `ImageNode`.
-- **Inferred Auto Layout**: Converts CSS Flexbox (`row`, `column`, `gap`, `padding`, alignment) into native Figma Auto Layout.
-- **Editable Typography**: Real text nodes with font weight mapping (100–900), line height, letter spacing, alignment, and loaded font fallbacks.
-- **Design Intelligence**: Color scanner (HEX, RGB, HSL, OKLCH, nearest Tailwind token), typography inventory, asset manifest, WCAG 2.1 contrast auditing, and `DESIGN.md` / `SKILL.md` export for AI coding agents.
-- **Privacy & Security by Default**: 100% local processing, zero telemetry, and automatic redaction of sensitive form fields, passwords, and personal data.
+**The primary workflow requires no Figma plugin.** “Copy to Figma” writes native Figma binary clipboard data as HTML. Paste onto the canvas with ⌘V / Ctrl+V. Text, frames, supported vector shapes, embedded images and compatible Auto Layout stacks remain editable. Native clipboard compatibility still needs real Figma canvas acceptance; automated decoding alone does not prove rendering fidelity.
 
----
+## Build and test
 
-## Architecture Overview
+Use Node.js 24 and npm:
 
-```text
-export-web-to-figma/
-├── apps/
-│   ├── chrome-extension/       # Manifest V3 Extension (Popup, Content Scripts, Service Worker)
-│   └── figma-plugin/           # Figma Companion Plugin (Canvas Importer Sandbox & UI)
-├── packages/
-│   ├── scene-graph/            # Versioned interchange schema (1.0.0) & validator
-│   ├── style-normalizer/       # CSS to design tokens, color math, WCAG, Tailwind matcher
-│   ├── dom-capture/            # In-page DOM traversal, layout inference, form redaction
-│   ├── asset-pipeline/         # Asset extraction, deduplication, base64 encoding
-│   └── shared-protocol/        # IPC messages, DESIGN.md & SKILL.md generators, SVG fallback
-├── fixtures/
-│   └── test-site/              # Comprehensive test bench covering all layout & style edge cases
-└── docs/
-    ├── ARCHITECTURE.md         # System design & data flow
-    ├── TECHNICAL_DECISIONS.md  # Feasibility findings & clipboard test results
-    ├── LIMITATIONS.md          # Documented browser & Figma boundaries
-    ├── PRIVACY.md              # Privacy & security guarantees
-    └── TESTING.md              # Testing strategy & verification protocol
-```
-
----
-
-## Getting Started
-
-### 1. Install & Build
-```bash
-# Install dependencies
-npm install
-
-# Run automated tests
+```sh
+npm ci
+npm run typecheck -- --force
 npm test
-
-# Build Chrome Extension and Figma Plugin
 npm run build
 ```
 
----
+The regression suite covers capture bounds, element picking, cancellation, storage failures, asset limits/deduplication, nested payload validation, contrast, importer text/image properties, rollback and UI escaping. Host APIs are mocked in automated tests; actual Chrome/Figma smoke testing remains required. GitHub Actions runs these checks and uploads both application builds.
 
-### 2. Load the Chrome Extension in Chrome
-1. Open Google Chrome and navigate to `chrome://extensions`.
-2. Toggle on **Developer mode** in the top right corner.
-3. Click **Load unpacked** in the top left.
-4. Select the directory:
-   `apps/chrome-extension/dist`
-5. The **FrameForge** icon will appear in your Chrome toolbar.
+## Load the extension
 
----
+1. Open `chrome://extensions` in Chrome or the equivalent page in a Chromium browser.
+2. Enable Developer mode and choose **Load unpacked**.
+3. Select `apps/chrome-extension/dist`.
+4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.6.0 corrects translucent borders, modern shadows, SVG gradients and form controls; saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
 
-### 3. Load the Companion Plugin in Figma
-1. Open **Figma** (Desktop or Web) and open any design canvas.
-2. Go to **Plugins** -> **Development** -> **Import plugin from manifest...**.
-3. Select the file:
-   `apps/figma-plugin/manifest.json`
-4. The **FrameForge: Web to Editable Figma** plugin will now be available in your development plugins list.
+## Optional legacy JSON importer
 
----
+1. Run `npm run build`.
+2. In Figma, choose **Plugins → Development → Import plugin from manifest**.
+3. Select `apps/figma-plugin/manifest.json`, or the root `figma-manifest.json`.
+4. Run **FrameForge: Web to Editable Figma**. Restart it after rebuilding.
 
-### 4. End-to-End Workflow Validation
-1. Open the included test bench:
-   Open `fixtures/test-site/index.html` in Chrome (or run `npx serve fixtures/test-site -p 3000`).
-2. Click the **FrameForge** extension icon in your Chrome toolbar.
-3. Select capture scope:
-   - **Current Viewport**
-   - **Full Page**
-   - **Select Element** (hover highlight with Esc to cancel)
-4. Click **"Capture Web Layers"**.
-5. Click **"📋 Copy for Figma (1-Click)"** (or click "Save JSON").
-6. In Figma, run the **FrameForge** plugin and click **"Import from Clipboard"** (or drop the saved `.json` file).
-7. Inspect the reconstructed canvas:
-   - Double click text to edit native characters.
-   - Select card frames to see native **Auto Layout** with padding and item spacing.
-   - Review the import summary card for node counts and font diagnostic notes.
+The Chrome manifest is only for Chrome. Plugin and extension outputs are now packaged separately.
 
----
+## Capture and import
 
-## Documentation Links
+1. Open a regular HTTP/HTTPS webpage.
+2. Open the extension and choose **Visible area**, **Full page** or **Choose element**.
+3. Click **Capture & copy**. For selection, click the element or use arrows/Enter; Esc cancels. In-page feedback reports completion or failure.
+4. Successful native copying automatically clears the matching saved capture. The popup confirms completion, then closes; export notes remain visible until **Done**. Failed copies remain saved under **Copy to Figma** for retry. **Discard** clears them manually.
+5. Focus the Figma canvas and press **⌘V / Ctrl+V**. No importer window or JSON paste is needed.
+6. JSON and SVG remain optional diagnostic/fallback exports under **Details & other formats**.
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Component breakdown, monorepo design, data flow diagrams.
-- [docs/TECHNICAL_DECISIONS.md](docs/TECHNICAL_DECISIONS.md): Clipboard feasibility spike, direct-paste findings, and rationale for companion plugin.
-- [docs/LIMITATIONS.md](docs/LIMITATIONS.md): Cross-origin iframes, restricted Chrome pages, and font fallbacks.
-- [docs/PRIVACY.md](docs/PRIVACY.md): Form redaction, minimal permissions, and zero-telemetry guarantee.
-- [docs/TESTING.md](docs/TESTING.md): Verification test plan and manual Figma inspection steps.
+Figma handles placement and font availability when pasting. The extension reports capture/conversion warnings. The optional legacy importer continues to support JSON, cancellation and rollback.
+
+Capture is limited to 2,500 output nodes, depth 64, 2 MB per downloaded image, about 6 MB of embedded data URL characters and 8 MB of serialized JSON. Downloads use up to four concurrent requests, cache repeated URLs and time out; captures can be cancelled and have a 30-second overall deadline. The importer rejects invalid or oversized structures before creating layers.
+
+## Fidelity and privacy
+
+Text is editable and includes shaped glyph outlines so it can render on initial paste. Bundled Inter regular/italic faces support weights 100–900; other font families are substituted with a warning. Compatible flex, measured block flows and regular wrapped rows retain Auto Layout, with editable spacers for unequal gaps. Positioned badges and background layers remain absolute inside these frames. Overlapping content keeps measured positioning. Other layouts keep absolute positioning. Canvas snapshots and video posters are used when available. Image acquisition retries through the extension, converts browser raster formats to PNG and can reuse readable loaded images. Protected or inaccessible images can still remain placeholders. Eligible paragraphs retain one editable text layer with inline styles and measured wrapping.
+
+There is no guarantee of pixel-perfect reproduction for arbitrary CSS. Transforms, complex generated content, advanced filters, embedded documents and some background/image behavior remain limited. Full page captures include currently loaded content; scroll first to load lazy sections. See [limitations](docs/LIMITATIONS.md).
+
+Processing is local and no telemetry or account backend is implemented. Remote image embedding makes network requests to asset hosts. Input values are redacted, but ordinary page text, titles and URLs can contain private information. The latest capture is stored locally until a successful native copy clears it. Failed copies remain available for retry; **Discard** clears them manually. See [privacy](docs/PRIVACY.md).
+
+## Audit and verification
+
+- [Screenshot fidelity review — 1.6.0](docs/SCREENSHOT_REVIEW_1.6.0.md)
+- [Images, paragraphs and nested layout audit — 1.5.0](docs/BROWSER_EXTENSION_AUDIT_1.5.0.md)
+- [Gradient, image fitting and layout audit — 1.4.0](docs/BROWSER_EXTENSION_AUDIT_1.4.0.md)
+- [Browser extension audit and UI changes — 1.3.0](docs/BROWSER_EXTENSION_AUDIT_1.3.0.md)
+- [Original audit](docs/PRODUCT_AUDIT_2026-10-20.md)
+- [Fixes, verification and remaining gaps](docs/FIXES_AND_VERIFICATION.md)
+- [Testing guide](docs/TESTING.md)
+- `node scripts/audit-probes.mjs` runs the focused regression checks.
+- `node scripts/benchmark-capture.mjs` runs a synthetic DOM throughput benchmark.
+- Serve this repository locally and open `fixtures/ui-preview.html` for interface previews. These previews cannot exercise Chrome or Figma APIs.

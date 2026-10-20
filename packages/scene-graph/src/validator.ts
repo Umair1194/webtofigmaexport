@@ -1,3 +1,4 @@
+import { preflightDocument } from "./preflight.js";
 import {
   BoundingBox,
   CaptureDiagnostics,
@@ -64,6 +65,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
     bounds,
     visible,
     opacity,
+    layoutPositioning: n.layoutPositioning === "ABSOLUTE" ? "ABSOLUTE" as const : "AUTO" as const,
     sourceTag: typeof n.sourceTag === "string" ? n.sourceTag : undefined,
     sourceRole: typeof n.sourceRole === "string" ? n.sourceRole : undefined,
     sourceClasses: Array.isArray(n.sourceClasses) ? (n.sourceClasses as string[]) : undefined,
@@ -99,6 +101,8 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
         ...base,
         type: "TEXT",
         characters,
+        runs: Array.isArray(n.runs) ? n.runs.map((r:any)=>({start:r.start,end:r.end,style:r.style,fills:r.fills})) : undefined,
+        fragments: Array.isArray(n.fragments) ? n.fragments.map((f: any) => ({ start: f.start, end: f.end, bounds: validateBounds(f.bounds) })) : undefined,
         style: {
           fontFamily: (style as any).fontFamily || "Inter",
           fontWeight: (style as any).fontWeight || 400,
@@ -126,6 +130,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
           : "COVER",
         cornerRadius: n.cornerRadius as any,
         strokes: Array.isArray(n.strokes) ? n.strokes : undefined,
+        effects: Array.isArray(n.effects) ? n.effects : undefined,
       };
     }
     case "VECTOR": {
@@ -192,6 +197,8 @@ export function validateSceneGraph(jsonInput: unknown): ValidationResult {
     return { valid: false, errors, warnings };
   }
 
+  errors.push(...preflightDocument(raw));
+  if (errors.length) return { valid: false, errors, warnings };
   const validatedRoot = validateNode(raw.root) as FrameNode | null;
   if (!validatedRoot || validatedRoot.type !== "FRAME") {
     errors.push("Invalid root node: root must be a valid FRAME node.");
@@ -199,14 +206,12 @@ export function validateSceneGraph(jsonInput: unknown): ValidationResult {
   }
 
   const viewport = (raw.viewport as any) || {};
-  const diagnostics: CaptureDiagnostics = (raw.diagnostics as any) || {
-    totalNodesCaptured: 0,
-    totalTextNodes: 0,
-    totalImages: 0,
-    totalVectors: 0,
-    totalUnsupported: 0,
-    warnings: [],
-    durationMs: 0,
+  const d = raw.diagnostics && typeof raw.diagnostics === "object" ? raw.diagnostics as Record<string, unknown> : {};
+  const metric = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
+  const diagnostics: CaptureDiagnostics = {
+    totalNodesCaptured: metric(d.totalNodesCaptured), totalTextNodes: metric(d.totalTextNodes), totalImages: metric(d.totalImages),
+    totalVectors: metric(d.totalVectors), totalUnsupported: metric(d.totalUnsupported), durationMs: metric(d.durationMs),
+    warnings: Array.isArray(d.warnings) ? d.warnings.filter((w): w is string => typeof w === "string").slice(0, 100) : [],
   };
 
   const document: SceneGraphDocument = {

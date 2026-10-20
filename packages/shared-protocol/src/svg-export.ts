@@ -20,22 +20,14 @@ function escapeXml(unsafe: string): string {
 let gradientCounter = 0;
 
 function renderGradientDef(paint: LinearGradientPaint, id: string): string {
-  const angle = paint.angleDegrees ?? 180;
-  // Convert angle to x1, y1, x2, y2 percentages
-  const rad = ((angle - 90) * Math.PI) / 180;
-  const x1 = Math.round(50 - 50 * Math.cos(rad));
-  const y1 = Math.round(50 - 50 * Math.sin(rad));
-  const x2 = Math.round(50 + 50 * Math.cos(rad));
-  const y2 = Math.round(50 + 50 * Math.sin(rad));
-
-  const stops = paint.stops
-    .map(
-      (s) =>
-        `<stop offset="${Math.round(s.position * 100)}%" stop-color="${rgbaToHex(s.color)}" stop-opacity="${s.color.a}" />`
-    )
-    .join("");
-
-  return `<linearGradient id="${id}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">${stops}</linearGradient>`;
+  const stops=paint.stops.map(s=>`<stop offset="${s.position*100}%" stop-color="${rgbaToHex({...s.color,a:1})}" stop-opacity="${s.color.a}" />`).join('');
+  const t=paint.gradientTransform;
+  let transform='';
+  if(t){const det=t.m00*t.m11-t.m01*t.m10;if(Math.abs(det)>1e-12){const a=t.m11/det,b=-t.m10/det,c=-t.m01/det,d=t.m00/det;transform=` gradientTransform="matrix(${a} ${b} ${c} ${d} ${-a*t.m02-c*t.m12} ${-b*t.m02-d*t.m12})"`;}}
+  if(paint.type==='GRADIENT_RADIAL')return `<radialGradient id="${id}" cx=".5" cy=".5" r=".5"${transform}>${stops}</radialGradient>`;
+  if(t)return `<linearGradient id="${id}" x1="0" y1=".5" x2="1" y2=".5"${transform}>${stops}</linearGradient>`;
+  const rad=((paint.angleDegrees-90)*Math.PI)/180;
+  return `<linearGradient id="${id}" x1="${50-50*Math.cos(rad)}%" y1="${50-50*Math.sin(rad)}%" x2="${50+50*Math.cos(rad)}%" y2="${50+50*Math.sin(rad)}%">${stops}</linearGradient>`;
 }
 
 function renderPaints(
@@ -54,7 +46,7 @@ function renderPaints(
     return { fillAttr: `fill="${rgbaToHex(primary.color)}"${opacityAttr}`, hasFill: true };
   }
 
-  if (primary.type === "GRADIENT_LINEAR") {
+  if (primary.type === "GRADIENT_LINEAR" || primary.type === "GRADIENT_RADIAL") {
     const gradId = `ff-grad-${++gradientCounter}`;
     defs.push(renderGradientDef(primary, gradId));
     return { fillAttr: `fill="url(#${gradId})"`, hasFill: true };

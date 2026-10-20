@@ -36,7 +36,8 @@ export interface ColorStop {
 }
 
 export interface LinearGradientPaint {
-  type: "GRADIENT_LINEAR";
+  type: "GRADIENT_LINEAR" | "GRADIENT_RADIAL";
+  gradientTransform?: { m00:number; m01:number; m02:number; m10:number; m11:number; m12:number };
   angleDegrees: number;
   stops: ColorStop[];
   visible?: boolean;
@@ -45,6 +46,7 @@ export interface LinearGradientPaint {
 export type Paint = SolidPaint | LinearGradientPaint;
 
 export interface StrokeStyle {
+  side?: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
   color: RGBAColor;
   width: number;
   alignment: "INSIDE" | "OUTSIDE" | "CENTER";
@@ -104,6 +106,7 @@ export interface BaseNode {
   visible: boolean;
   opacity: number; // 0 to 1
   zIndex?: number;
+  layoutPositioning?: "AUTO" | "ABSOLUTE";
   sourceTag?: string;
   sourceRole?: string;
   sourceClasses?: string[];
@@ -140,9 +143,18 @@ export interface TypographyStyle {
   textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE";
 }
 
+export interface TextFragment {
+  /** UTF-16 offsets in characters; geometry is relative to the text node. */
+  start: number;
+  end: number;
+  bounds: BoundingBox;
+}
+
 export interface TextNode extends BaseNode {
   type: "TEXT";
   characters: string;
+  fragments?: TextFragment[];
+  runs?: {start:number;end:number;style:TypographyStyle;fills:Paint[]}[];
   style: TypographyStyle;
   fills: Paint[];
 }

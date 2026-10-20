@@ -1,476 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="color-scheme" content="light">
   <title>FrameForge</title>
   <style>
-    :root {
-      --bg: #0b0f19;
-      --card-bg: #151c2c;
-      --border: #232f48;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --accent-subtle: rgba(99, 102, 241, 0.15);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --error: #ef4444;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      width: 380px;
-      min-height: 520px;
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 16px;
-      font-size: 13px;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-badge {
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: white;
-      font-size: 14px;
-    }
-
-    .brand-title {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .version-tag {
-      font-size: 10px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 4px;
-      background: var(--card-bg);
-      padding: 3px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      border: 1px solid var(--border);
-    }
-
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 6px 0;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s ease;
-    }
-
-    .tab-btn.active {
-      background: var(--accent);
-      color: white;
-    }
-
-    /* Tab content panes */
-    .tab-pane {
-      display: none;
-    }
-
-    .tab-pane.active {
-      display: block;
-    }
-
-    /* Cards */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 10px;
-    }
-
-    /* Capture Mode Radio Group */
-    .mode-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    .mode-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: border-color 0.15s ease;
-    }
-
-    .mode-option:hover, .mode-option.selected {
-      border-color: var(--accent);
-      background: var(--accent-subtle);
-    }
-
-    .mode-option input {
-      accent-color: var(--accent);
-    }
-
-    .mode-label {
-      font-weight: 500;
-      font-size: 12px;
-    }
-
-    .mode-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    /* Buttons */
-    .btn {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background 0.15s ease;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-hover);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-group-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    /* Notification / Feedback Banner */
-    .notice-banner {
-      display: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      margin-bottom: 12px;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .notice-banner.active {
-      display: flex;
-    }
-
-    .notice-success {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid var(--success);
-      color: #34d399;
-    }
-
-    .notice-error {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid var(--error);
-      color: #f87171;
-    }
-
-    /* Results summary */
-    .result-summary {
-      display: none;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-
-    .result-summary.active {
-      display: block;
-    }
-
-    .stats-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-      font-size: 11px;
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-    }
-
-    .stat-value {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    /* List items for Colors / Typography / Assets */
-    .item-list {
-      max-height: 240px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .color-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 6px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    .color-item:hover {
-      background: rgba(255, 255, 255, 0.07);
-    }
-
-    .color-swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .color-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .typo-item {
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 6px;
-      font-size: 11px;
-    }
-
-    .asset-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 6px;
-      font-size: 11px;
-    }
+    :root{--ink:#202820;--muted:#657066;--line:#e2e7e1;--paper:#fff;--wash:#f5f7f3;--green:#355d42;--tint:#edf4ed;--red:#a12d29;--amber:#835116}
+    *{box-sizing:border-box}body{width:392px;max-height:600px;margin:0;background:var(--paper);color:var(--ink);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-y:auto}button,input,summary{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}[hidden]{display:none!important}.icon{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.sprite{display:none}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 15px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;letter-spacing:-.35px}.brand-mark{display:grid;place-items:center;width:28px;height:28px;background:var(--ink);color:#fff;border-radius:7px}.brand-mark .icon{width:19px;height:19px}.icon-button{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:7px;background:white;color:var(--muted)}.icon-button:hover{background:var(--wash);color:var(--ink)}main{padding:20px 22px 18px}h1{font-size:22px;line-height:1.25;letter-spacing:-.7px;font-weight:650;margin:0 0 6px}.intro{margin:0 0 18px;color:var(--muted);font-size:12px}.page-context{display:flex;gap:11px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:20px}.page-icon{width:29px;height:32px;display:grid;place-items:center;background:var(--wash);border-radius:5px;color:var(--muted)}.page-copy{min-width:0;flex:1}.page-title{margin:0;font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.page-origin{font-size:11px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.site-state{font-size:10px;color:var(--green);display:flex;align-items:center;gap:5px}.site-state:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}.site-state.blocked{color:var(--amber)}
+    fieldset{border:0;padding:0;margin:0}legend{font-size:12px;font-weight:600;margin-bottom:9px;padding:0}.mode-group{border:1px solid var(--line);border-radius:9px;overflow:hidden}.mode-option{position:relative;display:flex;align-items:center;gap:11px;min-height:62px;padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--line);background:white}.mode-option:last-child{border-bottom:0}.mode-option:hover{background:#fafbf8}.mode-option.selected{background:var(--tint)}.mode-option>.icon{color:#69786a}.mode-option.selected>.icon{color:var(--green)}.mode-copy{flex:1}.mode-label{font-size:12px;font-weight:600}.mode-desc{font-size:11px;color:var(--muted);margin-top:1px}.mode-option input{appearance:none;width:14px;height:14px;border:1px solid #b4beb4;border-radius:50%;margin:0;background:white;flex:none}.mode-option input:checked{border:4px solid var(--green)}
+    .btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:40px;padding:10px 14px;border:1px solid var(--line);border-radius:7px;background:white;color:var(--ink);font-weight:600;font-size:12px}.btn:hover{background:var(--wash)}.btn-primary{background:var(--ink);border-color:var(--ink);color:white}.btn-primary:hover{background:#354336}.capture-trigger{width:100%;margin-top:17px;justify-content:space-between;min-height:44px}.has-capture .capture-trigger{background:white;color:var(--ink);border-color:var(--line)}.paste-guide{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 0;color:var(--muted);font-size:11px}kbd{font:11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #d9dfd7;box-shadow:0 1px 0 #d9dfd7;border-radius:4px;padding:2px 5px;background:#fff;color:#465046}.cancel{background:none;border:0;color:var(--muted);display:block;margin:10px auto 0;text-decoration:underline;text-underline-offset:3px;font-size:11px}.footer{display:flex;justify-content:space-between;gap:10px;padding:13px 22px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}.footer span:first-child{display:flex;align-items:center;gap:5px}.footer .icon{width:13px;height:13px}
+    .notice-banner{display:none;padding:11px 12px;border-radius:7px;font-size:12px;line-height:1.5;margin-bottom:14px;overflow-wrap:anywhere}.notice-banner.active{display:block}.notice-error{background:#fff1ef;border:1px solid #efd0cb;color:var(--red)}.notice-success{background:var(--tint);border:1px solid #cdddcd;color:var(--green)}.notice-warning{background:#fff8eb;border:1px solid #eddfbb;color:var(--amber)}
+    .result-summary{display:none;border:1px solid #c9dacb;background:#fafcf8;border-radius:9px;padding:14px;margin-bottom:20px}.result-summary.active{display:block}.result-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600;font-size:12px}.result-heading>span{display:flex;align-items:center;gap:6px}.result-heading .icon{width:15px;height:15px;color:var(--green)}.text-button{border:0;background:none;padding:0;color:var(--muted);font-size:11px;font-weight:400;text-decoration:underline;text-underline-offset:3px}.workflow-hint{font-size:11px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere;margin:6px 0 12px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-bottom:13px}.stats-row{display:flex;justify-content:space-between;gap:6px;font-size:11px}.stat-label{color:var(--muted)}.stat-value{font-weight:600}.copy-action{width:100%}.review-details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.review-details>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;list-style:none}.review-details>summary::-webkit-details-marker{display:none}.review-details[open]>summary .icon{transform:rotate(180deg)}.review-details .icon{width:13px;height:13px}.capture-warnings{font-size:11px;line-height:1.5;color:var(--amber);padding-left:17px;margin:10px 0;max-height:100px;overflow:auto}.tabs{display:flex;gap:14px;border-bottom:1px solid var(--line);margin:11px 0}.tab-btn{border:0;background:none;color:var(--muted);padding:7px 0;border-bottom:2px solid transparent;font-size:11px}.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}.tab-pane{display:none}.tab-pane.active{display:block}.item-list{max-height:170px;overflow:auto;display:flex;flex-direction:column;gap:5px}.typo-item{padding:7px 0;border-bottom:1px solid var(--line);white-space:pre-line;overflow-wrap:anywhere;font-size:11px;line-height:1.5;color:var(--muted)}.color-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line);background:white;border-radius:5px;color:var(--ink);font-size:11px;text-align:left}.color-swatch{width:15px;height:15px;border-radius:3px;border:1px solid #0002;flex:none}.exports{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.exports .btn{min-height:30px;padding:6px;font-size:10px;font-weight:500}.success-view{text-align:center;padding:38px 4px 45px}.success-mark{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--tint);color:var(--green);margin:0 auto 17px}.success-mark .icon{width:25px;height:25px}.success-view h2{font-size:20px;letter-spacing:-.5px;margin:0 0 8px;font-weight:650}.success-view p{font-size:12px;color:var(--muted);max-width:260px;margin:0 auto 16px}.success-view .paste-guide{font-size:12px}.success-stats{font-size:11px;color:var(--muted);margin-top:20px}.busy .capture-trigger .icon{animation:pulse 1s ease-in-out infinite}@keyframes pulse{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand">
-      <div class="logo-badge">FF</div>
-      <span class="brand-title">FrameForge</span>
+  <svg class="sprite" aria-hidden="true"><defs>
+    <symbol id="i-frame" viewBox="0 0 24 24"><path d="M7 3v18M17 3v18M3 7h18M3 17h18"/></symbol>
+    <symbol id="i-inspect" viewBox="0 0 24 24"><path d="M4 10V4h6M14 4h6v6M20 14v6h-6M10 20H4v-6M9 9l9 3-4 2-2 4z"/></symbol>
+    <symbol id="i-page" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="i-select" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M10 10l9 3-4 2-2 4z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  </defs></svg>
+  <header class="header"><div class="brand"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-frame"/></svg></span>FrameForge</div><button class="icon-button" id="btn-toggle-inspect" aria-label="Inspect page" title="Inspect page"><svg class="icon" aria-hidden="true"><use href="#i-inspect"/></svg></button></header>
+  <main>
+    <div id="capture-view">
+      <h1>Web to Figma</h1><p class="intro">Capture a page or an element. Paste to edit.</p>
+      <div class="page-context"><span class="page-icon"><svg class="icon" aria-hidden="true"><use href="#i-page"/></svg></span><div class="page-copy"><p class="page-title" id="page-title">Current page</p><div class="page-origin" id="page-origin">Checking the active tab…</div></div><span class="site-state" id="site-state">Ready</span></div>
+      <div class="notice-banner" id="notice-banner" role="status" aria-live="polite" aria-atomic="true"></div>
+      <section class="result-summary" id="result-summary" aria-label="Saved capture">
+        <div class="result-heading"><span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Ready to copy</span><button class="text-button" id="btn-clear-capture">Discard</button></div>
+        <p id="capture-source" class="workflow-hint"></p>
+        <div class="metrics"><div class="stats-row"><span class="stat-label">Captured</span><span class="stat-value" id="stat-total-nodes">0</span></div><div class="stats-row"><span class="stat-label">Text</span><span class="stat-value" id="stat-text-nodes">0</span></div><div class="stats-row"><span class="stat-label">Auto Layout</span><span class="stat-value" id="stat-frames">On copy</span></div><div class="stats-row"><span class="stat-label">Capture time</span><span class="stat-value" id="stat-duration">0ms</span></div></div>
+        <button class="btn btn-primary copy-action" id="btn-copy-figma">Copy to Figma<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+        <details class="review-details"><summary>Details &amp; other formats<svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></summary>
+          <ul id="capture-warnings" class="capture-warnings" hidden></ul>
+          <div class="tabs" role="tablist" aria-label="Capture details"><button class="tab-btn active" data-tab="colors">Colors</button><button class="tab-btn" data-tab="typography">Type</button><button class="tab-btn" data-tab="assets">Assets</button><button class="tab-btn" data-tab="a11y">Contrast</button></div>
+          <div class="tab-pane active" id="pane-colors"><div class="item-list" id="colors-list"></div></div>
+          <div class="tab-pane" id="pane-typography"><div class="item-list" id="type-list"></div></div>
+          <div class="tab-pane" id="pane-assets"><div class="item-list" id="assets-list"></div></div>
+          <div class="tab-pane" id="pane-a11y"><div class="item-list" id="a11y-list"></div></div>
+          <div class="exports"><button class="btn" id="btn-download-json">Save JSON</button><button class="btn" id="btn-copy-svg">Copy SVG</button><button class="btn" id="btn-download-design">Design notes</button><button class="btn" id="btn-download-skill">Coding brief</button></div>
+        </details>
+      </section>
+      <fieldset id="capture-options"><legend>Capture area</legend><div class="mode-group">
+        <label class="mode-option selected"><svg class="icon" aria-hidden="true"><use href="#i-screen"/></svg><span class="mode-copy"><span class="mode-label">Visible area</span><span class="mode-desc" style="display:block">What’s on screen right now</span></span><input type="radio" name="capture-mode" value="VIEWPORT" checked aria-label="Visible area"></label>
+        <label class="mode-option"><svg class="icon" aria-hidden="true"><use href="#i-page"/></svg><span class="mode-copy"><span class="mode-label">Full page</span><span class="mode-desc" style="display:block">Loaded content, including below the fold</span></span><input type="radio" name="capture-mode" value="FULL_PAGE" aria-label="Full page"></label>
+        <label class="mode-option"><svg class="icon" aria-hidden="true"><use href="#i-select"/></svg><span class="mode-copy"><span class="mode-label">Choose element</span><span class="mode-desc" style="display:block">Pick one section or component</span></span><input type="radio" name="capture-mode" value="SELECTED_ELEMENT" aria-label="Choose element"></label>
+      </div></fieldset>
+      <button class="btn btn-primary capture-trigger" id="btn-run-capture"><span id="capture-action-label">Capture &amp; copy</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+      <button class="cancel" id="btn-cancel-capture" hidden>Cancel capture</button>
+      <p class="paste-guide"><kbd class="paste-shortcut">⌘ V</kbd><span>Then paste on the Figma canvas.</span></p>
     </div>
-    <span class="version-tag">v1.0.0</span>
-  </div>
-
-  <div class="notice-banner" id="notice-banner"></div>
-
-  <!-- Tabs Navigation -->
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="capture">Capture</button>
-    <button class="tab-btn" data-tab="inspect">Inspect</button>
-    <button class="tab-btn" data-tab="colors">Colors</button>
-    <button class="tab-btn" data-tab="typography">Type</button>
-    <button class="tab-btn" data-tab="assets">Assets</button>
-    <button class="tab-btn" data-tab="a11y">A11y</button>
-  </div>
-
-  <!-- TAB 1: CAPTURE -->
-  <div class="tab-pane active" id="pane-capture">
-    <div class="card">
-      <div class="section-title">Capture Scope</div>
-      <div class="mode-group">
-        <label class="mode-option selected">
-          <input type="radio" name="capture-mode" value="VIEWPORT" checked>
-          <div>
-            <div class="mode-label">Current Viewport</div>
-            <div class="mode-desc">Capture visible browser screen</div>
-          </div>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="capture-mode" value="FULL_PAGE">
-          <div>
-            <div class="mode-label">Full Page</div>
-            <div class="mode-desc">Capture entire scrollable document</div>
-          </div>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="capture-mode" value="SELECTED_ELEMENT">
-          <div>
-            <div class="mode-label">Select Element</div>
-            <div class="mode-desc">Interactive hover selection in page</div>
-          </div>
-        </label>
-      </div>
-
-      <button class="btn btn-primary" id="btn-run-capture">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        Capture Web Layers
-      </button>
-
-      <div class="result-summary" id="result-summary">
-        <div class="section-title" style="margin-top: 8px;">Capture Ready</div>
-        <div class="stats-row">
-          <span class="stat-label">Total Nodes:</span>
-          <span class="stat-value" id="stat-total-nodes">0</span>
-        </div>
-        <div class="stats-row">
-          <span class="stat-label">Editable Text Layers:</span>
-          <span class="stat-value" id="stat-text-nodes">0</span>
-        </div>
-        <div class="stats-row">
-          <span class="stat-label">Auto Layout Frames:</span>
-          <span class="stat-value" id="stat-frames">0</span>
-        </div>
-        <div class="stats-row">
-          <span class="stat-label">Duration:</span>
-          <span class="stat-value" id="stat-duration">0ms</span>
-        </div>
-
-        <button class="btn btn-primary" id="btn-copy-figma" style="margin-top: 10px;">
-          📋 Copy for Figma (1-Click)
-        </button>
-
-        <div class="btn-group-grid">
-          <button class="btn btn-secondary" id="btn-download-json">Save JSON</button>
-          <button class="btn btn-secondary" id="btn-copy-svg">Copy SVG</button>
-        </div>
-        <div class="btn-group-grid">
-          <button class="btn btn-secondary" id="btn-download-design">DESIGN.md</button>
-          <button class="btn btn-secondary" id="btn-download-skill">SKILL.md</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 2: INSPECT -->
-  <div class="tab-pane" id="pane-inspect">
-    <div class="card">
-      <div class="section-title">In-Page Design Inspector</div>
-      <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">
-        Hover over webpage elements to inspect box dimensions, computed typography, padding/margin metrics, and live WCAG color contrast.
-      </p>
-      <button class="btn btn-primary" id="btn-toggle-inspect">
-        🔍 Activate In-Page Inspector
-      </button>
-    </div>
-  </div>
-
-  <!-- TAB 3: COLORS -->
-  <div class="tab-pane" id="pane-colors">
-    <div class="card">
-      <div class="section-title">Extracted Color Palette</div>
-      <div class="item-list" id="colors-list">
-        <div style="color: var(--text-muted); font-size: 11px;">Capture a page first to view palette tokens.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 4: TYPOGRAPHY -->
-  <div class="tab-pane" id="pane-typography">
-    <div class="card">
-      <div class="section-title">Typography Scale</div>
-      <div class="item-list" id="type-list">
-        <div style="color: var(--text-muted); font-size: 11px;">Capture a page first to inspect typography tokens.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 5: ASSETS -->
-  <div class="tab-pane" id="pane-assets">
-    <div class="card">
-      <div class="section-title">Asset Catalog</div>
-      <div class="item-list" id="assets-list">
-        <div style="color: var(--text-muted); font-size: 11px;">Capture a page first to view detected images and vectors.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 6: ACCESSIBILITY -->
-  <div class="tab-pane" id="pane-a11y">
-    <div class="card">
-      <div class="section-title">WCAG 2.1 Contrast Audit</div>
-      <div class="item-list" id="a11y-list">
-        <div style="color: var(--text-muted); font-size: 11px;">Capture a page first to run contrast compliance checks.</div>
-      </div>
-    </div>
-  </div>
-
+    <section id="copy-success" class="success-view" role="status" aria-live="polite" hidden><div class="success-mark"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></div><h2>Ready to paste</h2><p>Your layers are on the clipboard.<br>The saved capture has been cleared.</p><div class="paste-guide"><kbd class="paste-shortcut">⌘ V</kbd><span>on the Figma canvas</span></div><div class="success-stats" id="success-stats"></div><details class="review-details" id="success-review" hidden><summary>Review export notes<svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></summary><ul class="capture-warnings" id="success-warnings"></ul></details><button class="btn" id="btn-done" style="margin:16px auto 0" hidden>Done</button></section>
+  </main>
+  <footer class="footer"><span><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Captures clear after copying</span><span id="app-version"></span></footer>
   <script type="module" src="popup.js"></script>
 </body>
 </html>

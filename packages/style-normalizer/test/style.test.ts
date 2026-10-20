@@ -167,3 +167,14 @@ describe("Style Normalizer — Typography Module", () => {
     expect(typo.textCase).toBe("UPPER");
   });
 });
+
+describe("Corner percentage regression", () => {
+  it("preserves a 10 percent corner rather than making every percentage circular", () => {
+    expect(parseCornerRadius("10%", undefined, {width:200,height:100})?.topLeft).toBe(10);
+  });
+});
+
+it('keeps modern shadow colours out of geometry and discards transparent utility shadows',()=>{
+ const effects=parseBoxShadows('color(srgb 0.02 0.04 0.05 / 0.08) 0px 1px 2px -1px, oklab(0 0 0 / 0) 0px 0px 0px 10px, inset #12345678 0px 0px 0px 1px');
+ expect(effects).toHaveLength(2);expect(effects[0].offset).toEqual({x:0,y:1});expect(effects[0].radius).toBe(2);expect(effects[0].spread).toBe(-1);expect(effects[0].color.a).toBe(.08);expect(effects[1].spread).toBe(1);expect(effects[1].color.a).toBeCloseTo(120/255);
+});

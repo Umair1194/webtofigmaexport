@@ -1,10 +1,12 @@
 import path from "path";
+import fs from "node:fs";
 import { fileURLToPath } from "url";
 import { defineConfig } from "vitest/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  plugins: [{ name: "font-bytes", enforce: "pre", load(id) { if (id.endsWith(".woff2")) return "export default new Uint8Array(" + JSON.stringify([...fs.readFileSync(id)]) + ");"; } }],
   resolve: {
     alias: {
       "@frameforge/scene-graph": path.resolve(__dirname, "packages/scene-graph/src/index.ts"),

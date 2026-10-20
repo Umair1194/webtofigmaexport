@@ -1,17 +1,14 @@
 {
   "manifest_version": 3,
   "name": "FrameForge: Web to Editable Figma",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "description": "Capture webpages as native, editable Figma layers with semantic Auto Layout and design intelligence.",
-  "api": "1.0.0",
-  "main": "code.js",
-  "ui": "ui.html",
-  "editorType": ["figma"],
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
-    "contextMenus"
+    "contextMenus",
+    "clipboardWrite"
   ],
   "icons": {
     "16": "icons/icon-16.png",
@@ -35,8 +32,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     }
   ],
   "commands": {
@@ -68,5 +72,8 @@
       },
       "description": "Toggle In-Page Design Inspector"
     }
-  }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }

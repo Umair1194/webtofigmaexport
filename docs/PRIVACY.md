@@ -1,38 +1,11 @@
-# FrameForge Privacy & Security Architecture
+# Privacy and data handling
 
-## 1. Core Principles
+FrameForge has no telemetry, analytics, cloud capture service or account backend in the current implementation. Capturing and scene reconstruction run locally.
 
-FrameForge adheres to a strict **Local-First, Zero-Telemetry, Privacy-Preserving** model:
-1. **Zero Remote Transmission**: Captured DOM, styles, text, screenshots, and metadata are processed entirely on your machine. No data is sent to external servers or cloud APIs.
-2. **Minimal Permissions**: Uses Manifest V3 scoped permissions (`activeTab`, `scripting`, `storage`). Does not request broad access to all websites (`<all_urls>`).
-3. **Sensitive Form Data Redaction**: Automatically suppresses typed input values, passwords, credit card fields, and auth tokens.
-4. **No Third-Party Analytics**: No Google Analytics, Mixpanel, Sentry, or tracking pixels.
+Image embedding requests assets from their original hosts. Page requests may use the current session for same-origin images. Cross-origin requests and background retries omit credentials; cookies, tokens and page headers are not forwarded to the broker. The extension uses its existing host permissions for bounded background retries. Readable loaded images can be rasterized locally. Asset hosts receive ordinary network requests. Protected images and browser pixel-access restrictions can still prevent embedding.
 
----
+Form input/textarea values are replaced with placeholders or redaction marks. This is not general personal-data detection: ordinary DOM text, contenteditable text, image content, page titles and URLs may contain private information and are included in captures. Review the source before exporting.
 
-## 2. Chrome Extension Permissions Explained
+The latest capture is stored temporarily in Chrome local extension storage. A successful native **Copy to Figma** clears the matching saved capture automatically. Failed copies retain it for retry; **Discard** removes it manually. A newer capture from another tab is preserved. These controls do not delete downloaded files or clipboard contents. Secondary JSON/SVG exports do not automatically clear a capture. Importing into Figma places captured content into the current Figma document, where the document's normal sharing rules apply.
 
-| Permission | Reason for Request |
-| :--- | :--- |
-| `activeTab` | Grants temporary access to the active webpage only when the user explicitly clicks the FrameForge extension icon or opens the popup. |
-| `scripting` | Enables injecting the DOM capture script and the interactive element-selection highlight overlay into the active tab. |
-| `storage` | Saves user preferences (e.g. default capture mode, Auto Layout inference sensitivity, theme) locally in Chrome `storage.local`. |
-
----
-
-## 3. Form Redaction Rules
-
-During DOM traversal, form controls are filtered as follows:
-- `<input type="password">`: Value is completely stripped; replaced with empty string or placeholder bullets.
-- `<input type="text">`, `<textarea>`: Replaces entered user text with placeholder text or sanitized generic text unless the user explicitly toggles raw capture in development mode.
-- Attributes like `autocomplete`, `name="cardnumber"`, `name="cvv"`, `name="ssn"`, `name="token"`: Automatically stripped.
-- Local Storage, Session Storage, Cookies, and IndexedDB: **Never inspected or captured**.
-
----
-
-## 4. Figma Plugin Security
-
-The companion Figma plugin runs inside Figma's sandboxed environment:
-- Reads the validated Scene Graph JSON provided by the user via clipboard or file drop.
-- Runs schema validation before executing any `figma.*` node creation calls.
-- Does not make external network requests.
+Captured/imported strings are displayed using text nodes, and the importer validates nested fields and resource budgets before creating canvas layers. These protections do not turn an arbitrary capture into a trusted document.

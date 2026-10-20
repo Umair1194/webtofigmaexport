@@ -1,6 +1,6 @@
 {
   "name": "@frameforge/chrome-extension",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "type": "module",
   "scripts": {
     "build": "node build.js",
@@ -8,15 +8,25 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@frameforge/asset-pipeline": "1.0.0",
     "@frameforge/dom-capture": "1.0.0",
     "@frameforge/scene-graph": "1.0.0",
     "@frameforge/shared-protocol": "1.0.0",
-    "@frameforge/style-normalizer": "1.0.0"
+    "@frameforge/style-normalizer": "1.0.0",
+    "@open-pencil/fig": "^0.16.0",
+    "@open-pencil/kiwi": "^0.16.0",
+    "@open-pencil/scene-graph": "^0.16.0",
+    "buffer": "^6.0.3",
+    "clipper-lib": "^6.4.2",
+    "fontkit": "^2.0.4",
+    "svgpath": "^2.6.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.304",
-    "esbuild": "^0.25.0",
+    "@types/clipper-lib": "^6.4.0",
+    "@types/fontkit": "^2.0.9",
+    "esbuild": "^0.28.2",
     "typescript": "^5.7.3"
   }
 }

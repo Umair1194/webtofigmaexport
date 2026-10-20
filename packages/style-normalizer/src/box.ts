@@ -1,11 +1,9 @@
+import { parseLinearGradient, parseRadialGradient, splitCssLayers, type GradientSize } from './gradients.js';
 import {
   CornerRadius,
-  Effect,
-  LinearGradientPaint,
-  Paint,
   RGBAColor,
+  Paint,
   ShadowEffect,
-  SolidPaint,
   StrokeStyle,
 } from "@frameforge/scene-graph";
 import { parseColor } from "./color.js";
@@ -21,11 +19,12 @@ export function parseCornerRadius(
   individual?: { tl?: string; tr?: string; br?: string; bl?: string },
   referenceSize?: { width: number; height: number }
 ): CornerRadius | undefined {
+  const radius = (value: string) => value.includes("%") ? Math.max(0, parseFloat(value) / 100 * (referenceSize ? Math.min(referenceSize.width, referenceSize.height) : 100)) : Math.max(0, parsePx(value));
   if (individual && (individual.tl || individual.tr || individual.br || individual.bl)) {
-    const tl = parsePx(individual.tl || "0");
-    const tr = parsePx(individual.tr || "0");
-    const br = parsePx(individual.br || "0");
-    const bl = parsePx(individual.bl || "0");
+    const tl = radius(individual.tl || "0");
+    const tr = radius(individual.tr || "0");
+    const br = radius(individual.br || "0");
+    const bl = radius(individual.bl || "0");
     const isUniform = tl === tr && tr === br && br === bl;
     if (tl === 0 && tr === 0 && br === 0 && bl === 0) return undefined;
     return { topLeft: tl, topRight: tr, bottomRight: br, bottomLeft: bl, isUniform };
@@ -35,14 +34,7 @@ export function parseCornerRadius(
     return undefined;
   }
 
-  // Handle circular percentage border-radius (e.g. 50% for avatars)
-  if (radiusStr.includes("%")) {
-    const minDim = referenceSize ? Math.min(referenceSize.width, referenceSize.height) : 100;
-    const r = Math.round((minDim / 2));
-    return { topLeft: r, topRight: r, bottomRight: r, bottomLeft: r, isUniform: true };
-  }
-
-  const parts = radiusStr.trim().split(/\s+/).map(parsePx);
+  const parts = radiusStr.split("/")[0].trim().split(/\s+/).map(radius);
   if (parts.length === 1) {
     const r = parts[0];
     if (r === 0) return undefined;
@@ -64,25 +56,15 @@ export function parseCornerRadius(
 export function parseBorders(
   computedStyle: CSSStyleDeclaration | Record<string, string>
 ): StrokeStyle[] | undefined {
-  const borderWidth = parsePx(computedStyle.borderTopWidth || computedStyle.borderWidth || "0");
-  const borderStyle = computedStyle.borderTopStyle || computedStyle.borderStyle || "none";
-  const borderColorStr = computedStyle.borderTopColor || computedStyle.borderColor || "transparent";
-
-  if (borderWidth <= 0 || borderStyle === "none" || borderStyle === "hidden") {
-    return undefined;
+  const strokes: StrokeStyle[] = [];
+  for (const side of ["Top", "Right", "Bottom", "Left"] as const) {
+    const record = computedStyle as Record<string, string>;
+    const width = parsePx(record["border" + side + "Width"] || computedStyle.borderWidth || "0");
+    const style = record["border" + side + "Style"] || computedStyle.borderStyle || "none";
+    const color = parseColor(record["border" + side + "Color"] || computedStyle.borderColor || "transparent");
+    if (width > 0 && style !== "none" && style !== "hidden" && color.a > 0) strokes.push({ side: side.toUpperCase() as StrokeStyle["side"], color, width, alignment: "INSIDE", style: style === "dashed" ? "dashed" : style === "dotted" ? "dotted" : "solid" });
   }
-
-  const color = parseColor(borderColorStr);
-  if (color.a <= 0) return undefined;
-
-  return [
-    {
-      color,
-      width: borderWidth,
-      alignment: "INSIDE",
-      style: borderStyle === "dashed" ? "dashed" : borderStyle === "dotted" ? "dotted" : "solid",
-    },
-  ];
+  return strokes.length ? strokes : undefined;
 }
 
 export function parseBackgroundImageUrl(bgImageStr: string): string | undefined {
@@ -93,174 +75,33 @@ export function parseBackgroundImageUrl(bgImageStr: string): string | undefined 
   return match ? match[1] : undefined;
 }
 
-export function parseLinearGradient(bgImageStr: string): LinearGradientPaint | undefined {
-  if (!bgImageStr || !bgImageStr.includes("linear-gradient")) {
-    return undefined;
+export { parseLinearGradient } from './gradients.js';
+export function parseFills(computedStyle: CSSStyleDeclaration | Record<string,string>, size?: GradientSize): Paint[] {
+  const fills: Paint[]=[];
+  for(const layer of splitCssLayers(computedStyle.backgroundImage || '')) {
+    const gradient=parseLinearGradient(layer,size) || parseRadialGradient(layer,size);
+    if(gradient)fills.push(gradient);
   }
-
-  const match = bgImageStr.match(/linear-gradient\((.+)\)/);
-  if (!match) return undefined;
-
-  const content = match[1];
-  // Basic split by commas that aren't inside parentheses (e.g. rgba(0,0,0,1))
-  const parts: string[] = [];
-  let depth = 0;
-  let current = "";
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    if (char === "(") depth++;
-    else if (char === ")") depth--;
-    if (char === "," && depth === 0) {
-      parts.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  if (current.trim()) parts.push(current.trim());
-
-  if (parts.length < 2) return undefined;
-
-  let angleDegrees = 180; // default to bottom
-  let stopStartIndex = 0;
-
-  const firstPart = parts[0].toLowerCase();
-  if (firstPart.includes("deg")) {
-    angleDegrees = parseFloat(firstPart);
-    stopStartIndex = 1;
-  } else if (firstPart.includes("to right")) {
-    angleDegrees = 90;
-    stopStartIndex = 1;
-  } else if (firstPart.includes("to bottom")) {
-    angleDegrees = 180;
-    stopStartIndex = 1;
-  } else if (firstPart.includes("to top")) {
-    angleDegrees = 0;
-    stopStartIndex = 1;
-  } else if (firstPart.includes("to left")) {
-    angleDegrees = 270;
-    stopStartIndex = 1;
-  }
-
-  const stops: { position: number; color: RGBAColor }[] = [];
-  const rawStops = parts.slice(stopStartIndex);
-
-  rawStops.forEach((rawStop, index) => {
-    const tokens = rawStop.trim().split(/\s+/);
-    let colorToken = tokens[0];
-    let posToken = tokens[1];
-    if (rawStop.includes("rgba(") || rawStop.includes("rgb(")) {
-      const closingParen = rawStop.indexOf(")");
-      colorToken = rawStop.substring(0, closingParen + 1);
-      posToken = rawStop.substring(closingParen + 1).trim();
-    }
-
-    const color = parseColor(colorToken);
-    let position = index / (rawStops.length - 1 || 1);
-    if (posToken && posToken.endsWith("%")) {
-      position = parseFloat(posToken) / 100;
-    }
-
-    stops.push({ position: Math.min(1, Math.max(0, position)), color });
-  });
-
-  return {
-    type: "GRADIENT_LINEAR",
-    angleDegrees: Number.isFinite(angleDegrees) ? angleDegrees : 180,
-    stops,
-    visible: true,
-  };
-}
-
-export function parseFills(
-  computedStyle: CSSStyleDeclaration | Record<string, string>
-): Paint[] {
-  const fills: Paint[] = [];
-
-  // Check background-image for linear gradient
-  const bgImage = computedStyle.backgroundImage || "";
-  const gradient = parseLinearGradient(bgImage);
-  if (gradient) {
-    fills.push(gradient);
-  }
-
-  // Check background-color
-  const bgColorStr = computedStyle.backgroundColor || "";
-  if (bgColorStr && bgColorStr !== "transparent" && bgColorStr !== "rgba(0, 0, 0, 0)") {
-    const color = parseColor(bgColorStr);
-    if (color.a > 0) {
-      fills.push({
-        type: "SOLID",
-        color,
-        opacity: color.a,
-        visible: true,
-      });
-    }
-  }
-
+  const color=parseColor(computedStyle.backgroundColor || 'transparent');
+  if(color.a>0)fills.push({type:'SOLID',color,opacity:color.a,visible:true});
   return fills;
 }
 
 export function parseBoxShadows(shadowStr: string): ShadowEffect[] {
   if (!shadowStr || shadowStr === "none") return [];
 
-  const effects: ShadowEffect[] = [];
-  // Split multiple shadows by comma outside of parentheses
-  const parts: string[] = [];
-  let depth = 0;
-  let current = "";
-  for (let i = 0; i < shadowStr.length; i++) {
-    const char = shadowStr[i];
-    if (char === "(") depth++;
-    else if (char === ")") depth--;
-    if (char === "," && depth === 0) {
-      parts.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
+  const effects:ShadowEffect[]=[];
+  for(const shadow of splitCssLayers(shadowStr)){
+    // Whitespace inside colour functions belongs to the colour, never the shadow geometry.
+    const tokens:string[]=[];let depth=0,start=0;
+    for(let i=0;i<=shadow.length;i++){const c=shadow[i];if(c==='(')depth++;if(c===')')depth--;if(i===shadow.length||(/\s/.test(c)&&depth===0)){const token=shadow.slice(start,i).trim();if(token)tokens.push(token);start=i+1;}}
+    const inset=tokens.includes('inset'),parts=tokens.filter(t=>t!=='inset');
+    const isLength=(t:string)=>/^-?(?:\d*\.)?\d+(?:px)?$/.test(t);
+    const lengths=parts.filter(isLength).map(Number.parseFloat),colors=parts.filter(t=>!isLength(t));
+    if(lengths.length<2||lengths.length>4||colors.length>1||lengths[2]<0)continue;
+    const color=parseColor(colors[0]||'black');
+    if(color.a===0)continue;
+    effects.push({type:inset?'INNER_SHADOW':'DROP_SHADOW',color,offset:{x:lengths[0],y:lengths[1]},radius:lengths[2]||0,spread:lengths[3]||0,visible:true});
   }
-  if (current.trim()) parts.push(current.trim());
-
-  for (const part of parts) {
-    const isInset = part.includes("inset");
-    const clean = part.replace("inset", "").trim();
-
-    // Extract color
-    let color: RGBAColor = { r: 0, g: 0, b: 0, a: 0.2 };
-    let numsPart = clean;
-
-    if (clean.includes("rgba(") || clean.includes("rgb(")) {
-      const match = clean.match(/(rgba?\([^)]+\))/);
-      if (match) {
-        color = parseColor(match[1]);
-        numsPart = clean.replace(match[1], "").trim();
-      }
-    } else if (clean.startsWith("#") || clean.endsWith("#")) {
-      const match = clean.match(/(#[0-9a-fA-F]+)/);
-      if (match) {
-        color = parseColor(match[1]);
-        numsPart = clean.replace(match[1], "").trim();
-      }
-    }
-
-    const numbers = numsPart.split(/\s+/).filter(Boolean).map(parsePx);
-    if (numbers.length >= 2) {
-      const x = numbers[0] || 0;
-      const y = numbers[1] || 0;
-      const blur = numbers[2] || 0;
-      const spread = numbers[3] || 0;
-
-      effects.push({
-        type: isInset ? "INNER_SHADOW" : "DROP_SHADOW",
-        color,
-        offset: { x, y },
-        radius: blur,
-        spread,
-        visible: true,
-      });
-    }
-  }
-
   return effects;
 }

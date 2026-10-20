@@ -1,268 +1,182 @@
-import { fetchImageAsDataUrl } from "@frameforge/asset-pipeline";
-import { capturePage, CaptureOptions } from "@frameforge/dom-capture";
-import { FrameNode, ImageNode, SceneGraphDocument, SceneNode } from "@frameforge/scene-graph";
-import {
-  checkWCAGCompliance,
-  parseColor,
-  rgbaToHex,
-  rgbaToRgbString,
-} from "@frameforge/style-normalizer";
+import { saveCapture, clearSavedCapture } from "../capture-store.js";
+import { copyCaptureInPage } from "../clipboard/client.js";
+import { collectFrames, captureEmbeddedFrames, registerFrameIdentityListener } from "./frames.js";
+import { loadCaptureImage } from "./images.js";
+import { capturePageAsync, CaptureOptions } from "@frameforge/dom-capture";
+import { SceneGraphDocument, SceneNode } from "@frameforge/scene-graph";
+import { checkWCAGCompliance, parseColor, rgbaToHex } from "@frameforge/style-normalizer";
 
-if ((window as any).__FRAMEFORGE_INITIALIZED__) {
-  console.log("FrameForge content script already active.");
-} else {
+if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
   (window as any).__FRAMEFORGE_INITIALIZED__ = true;
+  let cleanupMode: (() => void) | null = null;
+  let inspectActive = false;
+  let activeCapture: AbortController | null = null;
+  let panel: HTMLDivElement | null = null;
+  let lastCaptureId: string | null = null;
+  registerFrameIdentityListener();
 
-let isPickerActive = false;
-let isInspectActive = false;
-let highlightedElement: Element | null = null;
-let pickerOverlay: HTMLDivElement | null = null;
-let inspectTooltip: HTMLDivElement | null = null;
-
-// Clean up any existing overlays
-function removeOverlays() {
-  if (pickerOverlay) {
-    pickerOverlay.remove();
-    pickerOverlay = null;
-  }
-  if (inspectTooltip) {
-    inspectTooltip.remove();
-    inspectTooltip = null;
-  }
-  if (highlightedElement) {
-    (highlightedElement as HTMLElement).style.outline = "";
-    highlightedElement = null;
-  }
-}
-
-// In-line image assets for scene graph nodes
-async function inlineImageAssets(rootNode: SceneNode) {
-  const promises: Promise<void>[] = [];
-
-  function walk(node: SceneNode) {
-    if (node.type === "IMAGE") {
-      const imgNode = node as ImageNode;
-      if (imgNode.srcUrl && !imgNode.dataUrl) {
-        promises.push(
-          fetchImageAsDataUrl(imgNode.srcUrl).then((res) => {
-            if (res.dataUrl) {
-              imgNode.dataUrl = res.dataUrl;
-            }
-          })
-        );
-      }
+  function stopMode() { cleanupMode?.(); cleanupMode = null; inspectActive = false; }
+  function showPanel(message: string, actions: { label: string; run: () => void }[] = []) {
+    panel?.remove();
+    panel = document.createElement("div");
+    panel.id = "frameforge-panel";
+    panel.setAttribute("data-frameforge-ignore", "true");
+    panel.setAttribute("role", "status");
+    panel.style.cssText = "position:fixed;top:16px;right:16px;max-width:360px;padding:16px;background:#fff;color:#202621;border:1px solid #dce2dc;border-radius:10px;box-shadow:0 4px 18px #0002;z-index:2147483647;font:13px/1.5 system-ui;";
+    const text = document.createElement("div"); text.textContent = message; panel.appendChild(text);
+    for (const action of [...actions, { label: "Dismiss", run: () => { stopMode(); panel?.remove(); } }]) {
+      const button = document.createElement("button"); button.textContent = action.label;
+      button.style.cssText = "margin:10px 8px 0 0;padding:7px 10px;border-radius:6px;border:1px solid #cbd3cc;background:#f1f5f1;color:#202621;cursor:pointer;font:inherit;";
+      button.addEventListener("click", action.run); panel.appendChild(button);
     }
-    if (node.type === "FRAME" && "children" in node && Array.isArray((node as FrameNode).children)) {
-      for (const child of (node as FrameNode).children) {
-        walk(child);
-      }
-    }
+    document.documentElement.appendChild(panel);
   }
 
-  walk(rootNode);
-  await Promise.allSettled(promises);
-}
+  async function inlineAssets(doc: SceneGraphDocument, signal: AbortSignal) {
+    const jobs: { node: SceneNode; url: string }[] = [];
+    const stack: SceneNode[] = [doc.root];
+    while (stack.length) {
+      const node = stack.pop()!;
+      if (node.type === "FRAME") stack.push(...node.children);
+      if (node.type === "IMAGE" && node.srcUrl && !node.dataUrl) jobs.push({ node, url: node.srcUrl });
+      if (node.type === "UNSUPPORTED" && node.fallbackImageUrl) jobs.push({ node, url: node.fallbackImageUrl });
+    }
+    const cache = new Map<string, ReturnType<typeof loadCaptureImage>>();
+    let index = 0, embeddedChars = 0;
+    const warnings = new Set(doc.diagnostics.warnings);
+    await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => {
+      while (index < jobs.length && !signal.aborted) {
+        const { node, url } = jobs[index++];
+        if (!cache.has(url)) cache.set(url, loadCaptureImage(url, signal));
+        const result = await cache.get(url)!;
+        // Count every occurrence: the JSON transport contains each embedded string.
+        if (result.dataUrl && embeddedChars + result.dataUrl.length < 6 * 1024 * 1024) {
+          embeddedChars += result.dataUrl.length;
+          if (node.type === "IMAGE") node.dataUrl = result.dataUrl;
+          if (node.type === "UNSUPPORTED") node.fallbackImageUrl = result.dataUrl;
+        } else {
+          warnings.add(`Missing asset: ${node.name} (${result.error || "capture asset budget exceeded"}).`);
+          if (node.type === "UNSUPPORTED") node.fallbackImageUrl = undefined;
+        }
+      }
+    }));
+    doc.diagnostics.warnings = [...warnings];
+  }
 
-// Perform capture
-async function performCapture(
-  targetElement: Element = document.body,
-  options: CaptureOptions = {}
-): Promise<SceneGraphDocument> {
-  removeOverlays();
-  const doc = capturePage(targetElement, {
-    ...options,
-    inferAutoLayout: true,
-    redactForms: true,
+  async function performCapture(target: Element, options: CaptureOptions & { autoCopy?: boolean; frameDepth?: number; requestId?: string } = {}, embedded = false) {
+    if (activeCapture) throw new Error("A capture is already running. Cancel it before starting another.");
+    stopMode(); panel?.remove();
+    const controller = new AbortController(); activeCapture = controller;
+    const started = performance.now();
+    const reportStage = (stage: string) => { if (!embedded && options.requestId) void chrome.runtime.sendMessage({type:'CAPTURE_PROGRESS',requestId:options.requestId,stage}).catch(()=>{}); };
+    let timedOut = false, copied = false;
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
+    if (!embedded) showPanel("Capturing editable layers…", [{ label: "Cancel", run: () => controller.abort() }]);
+    try {
+      reportStage('Reading page…');
+      const frameInfo = collectFrames(target);
+      const doc = await capturePageAsync(target, { ...options, frameKeys: frameInfo.keys, signal: controller.signal, inferAutoLayout: true, redactForms: true });
+      await captureEmbeddedFrames(doc, frameInfo.frames, controller.signal, options.frameDepth || 0, options.maxNodes || 2500);
+      if (!embedded) showPanel("Embedding images…", [{ label: "Cancel", run: () => controller.abort() }]);
+      reportStage('Adding images…');
+      await inlineAssets(doc, controller.signal);
+      if (controller.signal.aborted) throw new Error(timedOut ? "Capture timed out after 30 seconds. Select a smaller section." : "Capture cancelled.");
+      doc.diagnostics.durationMs = Math.round(performance.now() - started);
+      // Chrome storage quota is measured in bytes, not JS UTF-16 characters.
+      if (new TextEncoder().encode(JSON.stringify(doc)).byteLength > 8 * 1024 * 1024) throw new Error("Capture exceeds 8 MB. Select a smaller section.");
+      if (!embedded) {
+        await saveCapture(doc);
+        lastCaptureId = doc.id;
+        const copy = async () => {
+          try {
+            await copyCaptureInPage(doc); copied = true;
+            try { await clearSavedCapture(doc.id); }
+            catch { showPanel('Copied to Figma. The saved capture could not be cleared; open the extension to discard it.'); return; }
+            panel?.remove(); panel = null;
+          }
+          catch (error) { showPanel(error instanceof Error ? error.message + " Open the extension to retry copying." : "Capture saved. Open the extension to copy to Figma."); }
+        };
+        if (options.autoCopy !== false) await copy();
+        else { panel?.remove(); panel = null; }
+      }
+      return { document: doc, copied };
+    } catch (error) {
+      if (!embedded) showPanel(error instanceof Error ? error.message : "Capture failed. Try a smaller section.");
+      throw error;
+    } finally { clearTimeout(timeout); activeCapture = null; }
+  }
+
+  function startPicker() {
+    stopMode();
+    let target: Element | null = null;
+    // A separate overlay avoids modifying the website's outline styles.
+    const outline = document.createElement("div");
+    outline.setAttribute("data-frameforge-ignore", "true");
+    outline.style.cssText = "position:fixed;pointer-events:none;border:2px solid #355d42;background:#355d4210;z-index:2147483646;display:none;";
+    document.documentElement.appendChild(outline);
+    showPanel("Click an element to capture. ↑ selects its parent, ↓ its first child, Enter captures, Esc cancels.");
+    function highlight(el: Element | null) {
+      if (!el || el.closest("[data-frameforge-ignore]")) return;
+      target = el; const r = el.getBoundingClientRect();
+      Object.assign(outline.style, { display: "block", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    }
+    const move = (event: MouseEvent) => highlight(event.target as Element);
+    const capture = (event: Event) => {
+      if ((event.target as Element)?.closest?.("[data-frameforge-ignore]")) return;
+      const selected = event instanceof MouseEvent ? event.target as Element : target;
+      event.preventDefault(); event.stopImmediatePropagation();
+      stopMode();
+      if (selected) void performCapture(selected, { captureMode: "SELECTED_ELEMENT" }).catch(() => {});
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { stopMode(); panel?.remove(); }
+      if (event.key === "ArrowUp") { event.preventDefault(); highlight(target?.parentElement || null); }
+      if (event.key === "ArrowDown") { event.preventDefault(); highlight(target?.firstElementChild || null); }
+      if (event.key === "Enter") capture(event);
+    };
+    highlight(document.activeElement && document.activeElement !== document.body ? document.activeElement : document.body);
+    if (!target) highlight(document.body);
+    document.addEventListener("mousemove", move, true);
+    document.addEventListener("click", capture, true);
+    document.addEventListener("keydown", key, true);
+    cleanupMode = () => { outline.remove(); document.removeEventListener("mousemove", move, true); document.removeEventListener("click", capture, true); document.removeEventListener("keydown", key, true); };
+  }
+
+  function toggleInspector() {
+    const wasActive = inspectActive; stopMode(); panel?.remove(); if (wasActive) return;
+    inspectActive = true;
+    const tooltip = document.createElement("div"); tooltip.setAttribute("data-frameforge-ignore", "true");
+    tooltip.style.cssText = "position:fixed;pointer-events:none;white-space:pre-line;padding:12px;background:#202820;color:white;border:1px solid #657066;border-radius:8px;z-index:2147483647;font:12px/1.5 system-ui;max-width:300px;";
+    document.documentElement.appendChild(tooltip);
+    let pending = 0; let target: Element | null = null;
+    const move = (event: MouseEvent) => {
+      target = event.target as Element;
+      if (pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = 0;
+        if (!target || target.closest("[data-frameforge-ignore]")) return;
+        const cs = window.getComputedStyle(target), r = target.getBoundingClientRect();
+        const fg = parseColor(cs.color), bg = parseColor(cs.backgroundColor);
+        const contrast = checkWCAGCompliance(fg, bg, parseFloat(cs.fontSize), parseFloat(cs.fontWeight), cs.backgroundImage !== "none");
+        tooltip.textContent = `${target.tagName.toLowerCase()} · ${Math.round(r.width)} × ${Math.round(r.height)}\n${cs.fontFamily.split(",")[0]} · ${cs.fontSize} / ${cs.fontWeight}\n${rgbaToHex(fg)} · Contrast ${contrast.contrastRatioFormatted}${contrast.uncertain ? "" : contrast.aaPass ? " · AA pass" : " · AA fail"}\nEsc to close`;
+        tooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - 310, r.left))}px`;
+        tooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - 150, r.bottom + 8))}px`;
+      });
+    };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") stopMode(); };
+    document.addEventListener("mousemove", move, true); document.addEventListener("keydown", key, true);
+    cleanupMode = () => { cancelAnimationFrame(pending); tooltip.remove(); document.removeEventListener("mousemove", move, true); document.removeEventListener("keydown", key, true); };
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
+    if (msg.type === "PING") respond({ status: "PONG" });
+    if (msg.type === "CAPTURE_COPIED") { if (!activeCapture && msg.id === lastCaptureId) { panel?.remove(); panel = null; } respond({ status: "ok" }); }
+    if (msg.type === "START_ELEMENT_PICKER") { if (activeCapture) { respond({ status: "error", error: "A capture is running." }); } else { startPicker(); respond({ status: "picker_started" }); } }
+    if (msg.type === "TOGGLE_INSPECT_MODE") { if (!activeCapture) toggleInspector(); respond({ status: "inspect_toggled", active: inspectActive }); }
+    if (msg.type === "CANCEL_CAPTURE") { activeCapture?.abort(); respond({ status: "ok" }); }
+    if (msg.type === "EXECUTE_CAPTURE" || msg.type === "CAPTURE_EMBEDDED_FRAME") {
+      performCapture(document.body, msg.payload || {}, msg.type === "CAPTURE_EMBEDDED_FRAME").then(result => respond({ status: "ok", ...result }), err => respond({ status: "error", error: err.message }));
+      return true;
+    }
   });
-
-  // Inline images so Figma plugin receives ready-to-render data URLs
-  await inlineImageAssets(doc.root);
-
-  return doc;
 }
-
-// Element Picker UI
-function startElementPicker() {
-  if (isPickerActive) return;
-  isPickerActive = true;
-  removeOverlays();
-
-  pickerOverlay = document.createElement("div");
-  pickerOverlay.id = "frameforge-overlay";
-  pickerOverlay.setAttribute("data-frameforge-ignore", "true");
-  pickerOverlay.style.cssText = `
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e1b4b;
-    color: #ffffff;
-    padding: 10px 20px;
-    border-radius: 9999px;
-    border: 1px solid #6366f1;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
-    z-index: 2147483647;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  `;
-  pickerOverlay.innerHTML = `
-    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#818cf8;animation:pulse 1.5s infinite;"></span>
-    <span>Click any element to capture. Press <strong>Esc</strong> to cancel.</span>
-  `;
-  document.body.appendChild(pickerOverlay);
-
-  const onMouseMove = (e: MouseEvent) => {
-    const target = e.target as Element;
-    if (!target || target.id === "frameforge-overlay" || target.closest("#frameforge-overlay")) {
-      return;
-    }
-    if (highlightedElement && highlightedElement !== target) {
-      (highlightedElement as HTMLElement).style.outline = "";
-    }
-    highlightedElement = target;
-    (highlightedElement as HTMLElement).style.outline = "2px solid #6366f1";
-    (highlightedElement as HTMLElement).style.outlineOffset = "-2px";
-  };
-
-  const onClick = async (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    stopElementPicker();
-
-    if (highlightedElement) {
-      const capturedDoc = await performCapture(highlightedElement, {
-        captureMode: "SELECTED_ELEMENT",
-      });
-
-      chrome.storage.local.set({ frameforge_last_capture: capturedDoc }, () => {
-        chrome.runtime.sendMessage({
-          type: "CAPTURE_SUCCESS",
-          payload: capturedDoc,
-        });
-      });
-    }
-  };
-
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      stopElementPicker();
-    }
-  };
-
-  function stopElementPicker() {
-    isPickerActive = false;
-    document.removeEventListener("mousemove", onMouseMove, true);
-    document.removeEventListener("click", onClick, true);
-    document.removeEventListener("keydown", onKeyDown, true);
-    removeOverlays();
-  }
-
-  document.addEventListener("mousemove", onMouseMove, true);
-  document.addEventListener("click", onClick, true);
-  document.addEventListener("keydown", onKeyDown, true);
-}
-
-// In-Page Design Inspector Mode
-function toggleInspectMode() {
-  isInspectActive = !isInspectActive;
-  removeOverlays();
-
-  if (!isInspectActive) return;
-
-  inspectTooltip = document.createElement("div");
-  inspectTooltip.id = "frameforge-inspect-tooltip";
-  inspectTooltip.setAttribute("data-frameforge-ignore", "true");
-  inspectTooltip.style.cssText = `
-    position: fixed;
-    display: none;
-    background: #0f172a;
-    color: #f8fafc;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-    font-size: 11px;
-    line-height: 1.4;
-    z-index: 2147483647;
-    pointer-events: none;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
-    max-width: 280px;
-  `;
-  document.body.appendChild(inspectTooltip);
-
-  const onInspectMove = (e: MouseEvent) => {
-    if (!isInspectActive || !inspectTooltip) return;
-    const target = e.target as HTMLElement;
-    if (!target || target.id?.startsWith("frameforge-")) return;
-
-    if (highlightedElement && highlightedElement !== target) {
-      (highlightedElement as HTMLElement).style.outline = "";
-    }
-    highlightedElement = target;
-    target.style.outline = "2px solid #818cf8";
-    target.style.outlineOffset = "-1px";
-
-    const computed = window.getComputedStyle(target);
-    const rect = target.getBoundingClientRect();
-    const fg = parseColor(computed.color);
-    const bg = parseColor(computed.backgroundColor);
-    const wcag = checkWCAGCompliance(fg, bg, parseFloat(computed.fontSize));
-
-    inspectTooltip.style.display = "block";
-    inspectTooltip.style.top = `${Math.min(window.innerHeight - 150, Math.max(10, rect.bottom + 8))}px`;
-    inspectTooltip.style.left = `${Math.min(window.innerWidth - 290, Math.max(10, rect.left))}px`;
-
-    inspectTooltip.innerHTML = `
-      <div style="font-weight:600;color:#c7d2fe;margin-bottom:4px;">
-        &lt;${target.tagName.toLowerCase()}${target.className ? `.${target.className.split(' ')[0]}` : ''}&gt;
-      </div>
-      <div>📐 Dimensions: <strong>${Math.round(rect.width)} × ${Math.round(rect.height)}px</strong></div>
-      <div>🔤 Font: <strong>${computed.fontFamily.split(',')[0]} ${computed.fontSize}</strong> (${computed.fontWeight})</div>
-      <div>🎨 Color: <span style="display:inline-block;width:10px;height:10px;background:${computed.color};border-radius:2px;vertical-align:middle;"></span> ${rgbaToHex(fg)}</div>
-      <div>🛡️ Contrast: <strong style="color:${wcag.aaPass ? '#34d399' : '#f87171'}">${wcag.contrastRatioFormatted}</strong> (AA ${wcag.aaPass ? 'Pass' : 'Fail'})</div>
-    `;
-  };
-
-  const onInspectKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      isInspectActive = false;
-      document.removeEventListener("mousemove", onInspectMove, true);
-      document.removeEventListener("keydown", onInspectKey, true);
-      removeOverlays();
-    }
-  };
-
-  document.addEventListener("mousemove", onInspectMove, true);
-  document.addEventListener("keydown", onInspectKey, true);
-}
-
-// Runtime message dispatcher
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "PING") {
-    sendResponse({ status: "PONG" });
-    return;
-  } else if (msg.type === "START_ELEMENT_PICKER") {
-    startElementPicker();
-    sendResponse({ status: "picker_started" });
-  } else if (msg.type === "TOGGLE_INSPECT_MODE") {
-    toggleInspectMode();
-    sendResponse({ status: "inspect_toggled", active: isInspectActive });
-  } else if (msg.type === "EXECUTE_CAPTURE") {
-    const options: CaptureOptions = msg.payload || { captureMode: "VIEWPORT" };
-    performCapture(document.body, options)
-      .then((doc) => {
-        chrome.storage.local.set({ frameforge_last_capture: doc });
-        sendResponse({ status: "ok", document: doc });
-      })
-      .catch((err) => {
-        sendResponse({ status: "error", error: err?.message || String(err) });
-      });
-    return true; // Keep message channel open for async response
-  }
-});
-} // end initialization block
