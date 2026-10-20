@@ -1,0 +1,19 @@
+{
+  "name": "@frameforge/figma-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@frameforge/scene-graph": "1.0.0",
+    "@frameforge/style-normalizer": "1.0.0"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.106.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3"
+  }
+}

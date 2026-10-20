@@ -1,0 +1,22 @@
+{
+  "name": "@frameforge/chrome-extension",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@frameforge/asset-pipeline": "1.0.0",
+    "@frameforge/dom-capture": "1.0.0",
+    "@frameforge/scene-graph": "1.0.0",
+    "@frameforge/shared-protocol": "1.0.0",
+    "@frameforge/style-normalizer": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.304",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3"
+  }
+}

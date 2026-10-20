@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "typeRoots": ["../../node_modules/@types", "./node_modules/@types"]
+  },
+  "include": ["src/**/*"]
+}

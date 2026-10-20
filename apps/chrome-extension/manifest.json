@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "FrameForge: Web to Editable Figma",
+  "version": "1.0.0",
+  "description": "Capture webpages as native, editable Figma layers with semantic Auto Layout and design intelligence.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FrameForge: Web to Figma"
+  },
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content.js"]
+    }
+  ]
+}

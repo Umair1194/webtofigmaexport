@@ -1,0 +1,6 @@
+{
+  "name": "@frameforge/test-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Comprehensive HTML/CSS test bench for FrameForge capture validation"
+}
