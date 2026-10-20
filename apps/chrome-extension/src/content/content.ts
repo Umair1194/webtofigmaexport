@@ -8,6 +8,11 @@ import {
   rgbaToRgbString,
 } from "@frameforge/style-normalizer";
 
+if ((window as any).__FRAMEFORGE_INITIALIZED__) {
+  console.log("FrameForge content script already active.");
+} else {
+  (window as any).__FRAMEFORGE_INITIALIZED__ = true;
+
 let isPickerActive = false;
 let isInspectActive = false;
 let highlightedElement: Element | null = null;
@@ -238,7 +243,10 @@ function toggleInspectMode() {
 
 // Runtime message dispatcher
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "START_ELEMENT_PICKER") {
+  if (msg.type === "PING") {
+    sendResponse({ status: "PONG" });
+    return;
+  } else if (msg.type === "START_ELEMENT_PICKER") {
     startElementPicker();
     sendResponse({ status: "picker_started" });
   } else if (msg.type === "TOGGLE_INSPECT_MODE") {
@@ -257,3 +265,4 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 });
+} // end initialization block

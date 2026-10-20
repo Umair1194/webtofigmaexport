@@ -180,6 +180,43 @@ document.querySelectorAll<HTMLLabelElement>(".mode-option").forEach((opt) => {
   });
 });
 
+function isRestrictedUrl(url?: string): boolean {
+  if (!url) return true;
+  return (
+    url.startsWith("chrome://") ||
+    url.startsWith("chrome-extension://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:") ||
+    url.startsWith("devtools://") ||
+    url.startsWith("view-source:") ||
+    url.includes("chromewebstore.google.com")
+  );
+}
+
+async function ensureContentScriptInjected(tabId: number): Promise<boolean> {
+  try {
+    const ping = await chrome.tabs.sendMessage(tabId, { type: "PING" }).catch(() => null);
+    if (ping?.status === "PONG") {
+      return true;
+    }
+  } catch {
+    // not responding
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content.js"],
+    });
+    // Brief tick to allow listeners to bind
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    return true;
+  } catch (err: any) {
+    console.warn("Could not inject content script:", err);
+    return false;
+  }
+}
+
 // Capture Button Click
 btnRunCapture.addEventListener("click", async () => {
   const selectedRadio = document.querySelector<HTMLInputElement>('input[name="capture-mode"]:checked');
@@ -192,8 +229,19 @@ btnRunCapture.addEventListener("click", async () => {
   }
 
   // Check for restricted URLs
-  if (tab.url?.startsWith("chrome://") || tab.url?.includes("chromewebstore.google.com")) {
-    showNotice("error", "Chrome forbids extensions on internal and Web Store pages.");
+  if (isRestrictedUrl(tab.url)) {
+    showNotice("error", "Chrome forbids extensions on internal & Web Store pages. Please open any website (e.g. localhost or a live site) to capture.");
+    return;
+  }
+
+  btnRunCapture.disabled = true;
+  btnRunCapture.textContent = "Connecting to page...";
+
+  const injected = await ensureContentScriptInjected(tab.id);
+  if (!injected) {
+    btnRunCapture.disabled = false;
+    btnRunCapture.textContent = "Capture Web Layers";
+    showNotice("error", "Could not connect to page. Try reloading the tab or opening an HTTP/HTTPS site.");
     return;
   }
 
@@ -204,7 +252,6 @@ btnRunCapture.addEventListener("click", async () => {
     return;
   }
 
-  btnRunCapture.disabled = true;
   btnRunCapture.textContent = "Capturing DOM & Assets...";
 
   try {
@@ -267,8 +314,18 @@ btnDownloadSkill.addEventListener("click", () => {
 // Toggle In-Page Inspector
 btnToggleInspect.addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
+  if (!tab || !tab.id) return;
+
+  if (isRestrictedUrl(tab.url)) {
+    showNotice("error", "Chrome restricts inspector on internal pages. Open a website first.");
+    return;
+  }
+
+  const injected = await ensureContentScriptInjected(tab.id);
+  if (injected) {
     chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_INSPECT_MODE" });
     window.close();
+  } else {
+    showNotice("error", "Could not attach inspector to page. Try reloading the tab.");
   }
 });
