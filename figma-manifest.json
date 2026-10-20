@@ -1,8 +1,10 @@
 {
   "name": "FrameForge: Web to Editable Figma",
-  "id": "frameforge-importer",
+  "id": "135792468012345678",
   "api": "1.0.0",
   "main": "apps/figma-plugin/dist/code.js",
   "ui": "apps/figma-plugin/dist/ui.html",
-  "editorType": ["figma"]
+  "editorType": [
+    "figma"
+  ]
 }

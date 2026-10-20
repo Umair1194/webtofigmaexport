@@ -3,6 +3,10 @@
   "name": "FrameForge: Web to Editable Figma",
   "version": "1.0.0",
   "description": "Capture webpages as native, editable Figma layers with semantic Auto Layout and design intelligence.",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
   "permissions": [
     "activeTab",
     "scripting",

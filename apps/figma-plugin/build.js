@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 const distDir = path.join(__dirname, "dist");
+const chromeDistDir = path.resolve(repoRoot, "apps/chrome-extension/dist");
 
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
@@ -17,7 +18,7 @@ fs.copyFileSync(path.join(__dirname, "src", "ui.html"), path.join(distDir, "ui.h
 // Also generate dist/manifest.json so importing from dist/ works seamlessly
 const distManifest = {
   name: "FrameForge: Web to Editable Figma",
-  id: "frameforge-importer",
+  id: "135792468012345678",
   api: "1.0.0",
   main: "code.js",
   ui: "ui.html",
@@ -50,5 +51,10 @@ if (isWatch) {
   console.log("Watching Figma plugin code...");
 } else {
   await esbuild.build(buildOptions);
+  // Also copy code.js and ui.html into chrome-extension dist/ so even if Chrome's dist manifest is opened in Figma, it succeeds!
+  if (fs.existsSync(chromeDistDir)) {
+    fs.copyFileSync(path.join(distDir, "code.js"), path.join(chromeDistDir, "code.js"));
+    fs.copyFileSync(path.join(distDir, "ui.html"), path.join(chromeDistDir, "ui.html"));
+  }
   console.log("Figma plugin built successfully in dist/.");
 }
