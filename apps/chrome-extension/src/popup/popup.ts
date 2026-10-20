@@ -293,8 +293,19 @@ btnDownloadJson.addEventListener("click", () => {
 btnCopySvg.addEventListener("click", async () => {
   if (!currentDocument) return;
   const svg = sceneGraphToSvg(currentDocument);
-  await navigator.clipboard.writeText(svg);
-  showNotice("success", "Copied SVG fallback (paste directly in Figma as vectors)!");
+  try {
+    const svgBlob = new Blob([svg], { type: "image/svg+xml" });
+    const textBlob = new Blob([svg], { type: "text/plain" });
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "image/svg+xml": svgBlob,
+        "text/plain": textBlob,
+      }),
+    ]);
+  } catch {
+    await navigator.clipboard.writeText(svg);
+  }
+  showNotice("success", "Copied SVG! In Figma, press Cmd+V to paste vectors.");
 });
 
 // Download DESIGN.md

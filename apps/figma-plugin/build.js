@@ -14,6 +14,17 @@ if (!fs.existsSync(distDir)) {
 // Copy ui.html to dist/ui.html
 fs.copyFileSync(path.join(__dirname, "src", "ui.html"), path.join(distDir, "ui.html"));
 
+// Also generate dist/manifest.json so importing from dist/ works seamlessly
+const distManifest = {
+  name: "FrameForge: Web to Editable Figma",
+  id: "frameforge-importer",
+  api: "1.0.0",
+  main: "code.js",
+  ui: "ui.html",
+  editorType: ["figma"],
+};
+fs.writeFileSync(path.join(distDir, "manifest.json"), JSON.stringify(distManifest, null, 2));
+
 const isWatch = process.argv.includes("--watch");
 
 const buildOptions = {
