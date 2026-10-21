@@ -89,3 +89,34 @@ it('offers cancellation while capture is pending and restores controls afterward
   ui.click('btn-run-capture');await settle();expect(ui.win.document.getElementById('btn-cancel-capture')!.hidden).toBe(false);
   ui.click('btn-cancel-capture');await settle();expect(ui.win.document.getElementById('notice-banner')!.textContent).toContain('cancelled');expect((ui.win.document.getElementById('btn-run-capture') as any).disabled).toBe(false);expect(nativeCopy).not.toHaveBeenCalled();
 });
+function incompleteCapture(){const doc=documentCapture();doc.root.children=[{id:'iframe',name:'Preview',type:'UNSUPPORTED',reason:'CROSS_ORIGIN_IFRAME',bounds:{...doc.root.bounds},visible:true,opacity:1}] as any;doc.diagnostics.warnings=['Embedded preview unavailable: Host access denied'];return doc;}
+it('marks a saved dominant iframe capture incomplete and exposes its diagnostic without copying',async()=>{
+  const ui=await setup({saved:incompleteCapture()});
+  expect(ui.win.document.getElementById('result-status')!.textContent).toBe('Embedded design missing');
+  expect((ui.win.document.getElementById('btn-copy-figma') as any).disabled).toBe(true);
+  expect(ui.win.document.querySelector('#result-summary details')!.hasAttribute('open')).toBe(true);
+  expect(ui.win.document.getElementById('capture-warnings')!.textContent).toContain('Host access denied');
+  ui.click('btn-copy-figma');await settle();expect(nativeCopy).not.toHaveBeenCalled();expect(ui.state.saved).not.toBeNull();
+  expect((ui.win.document.getElementById('btn-run-capture') as any).disabled).toBe(false);
+});
+it('does not auto-copy or delete a new capture missing the embedded design',async()=>{
+  const ui=await setup();ui.send.mockImplementation(async(_id:any,message:any)=>{
+    if(message.type==='PING')return {status:'PONG'};
+    if(message.type==='EXECUTE_CAPTURE'){ui.state.saved=incompleteCapture();return {status:'ok',document:ui.state.saved};}
+    return {status:'ok'};
+  });ui.click('btn-run-capture');await settle();
+  expect(nativeCopy).not.toHaveBeenCalled();expect(ui.state.saved).not.toBeNull();
+  expect(ui.win.document.getElementById('result-status')!.textContent).toBe('Embedded design missing');
+});
+it('provides a direct retry for a saved incomplete capture and replaces it after a successful fresh copy',async()=>{
+  const old=incompleteCapture();old.capturedAt='2026-10-21T17:14:05.000Z';
+  const ui=await setup({saved:old});
+  expect(ui.win.document.getElementById('btn-retry-capture')!.hidden).toBe(false);
+  expect(ui.win.document.getElementById('btn-copy-figma')!.hidden).toBe(true);
+  expect(ui.win.document.getElementById('capture-recorded')!.textContent).toContain('Saved ');
+  expect(ui.win.document.getElementById('capture-recorded')!.textContent).toContain('21');
+  ui.click('btn-retry-capture');await settle();
+  expect(ui.send).toHaveBeenCalledWith(10,expect.objectContaining({type:'EXECUTE_CAPTURE'}),{frameId:0});
+  expect(nativeCopy).toHaveBeenCalledOnce();expect(ui.state.saved).toBeNull();
+  expect(ui.win.document.getElementById('copy-success')!.hidden).toBe(false);
+});

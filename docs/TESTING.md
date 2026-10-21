@@ -2,6 +2,8 @@
 
 This document outlines the testing strategy, test fixtures, unit tests, integration verification, and manual Figma canvas validation steps.
 
+For the repeatable real-browser performance lab, saved baseline evidence, comparison thresholds, and explicit installed-extension/Figma acceptance checklist, see [Quality baseline](QUALITY_BASELINE.md). Run `npm run quality:serve`; `npm run quality:check` compiles the lab only.
+
 ---
 
 ## 1. Test Architecture
@@ -97,3 +99,5 @@ After building, run `node scripts/preview-capture-quality.mjs`. The two-origin C
 ## Screenshot paint fidelity — 1.6.0
 
 Run `node scripts/preview-paint-fidelity.mjs` for the Chromium capture/encoder fixture. Inspect soft borders, modern-colour shadows, SVG gradient/cutout geometry, input padding, checkbox state and backdrop blur. The report verifies decoded native data; the screenshot is source HTML, not Figma rendering. Reload the installed extension and source pages before making production comparisons at matched viewport sizes.
+
+Large-page measurements and stress checks (1.7.2): see [PERFORMANCE_1.7.2.md](PERFORMANCE_1.7.2.md). The quality lab's Run stress checks action covers scheduled capture cancellation, the 2,500-node limit, and eight repeated large exports. It does not exercise installed-popup responsiveness or make a leak-free guarantee.

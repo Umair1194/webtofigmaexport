@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-21T17:25:06.466Z",
+  "method": "Rendered HTML snapshot of the direct Magic Patterns frame; external site CSS loaded; site scripts removed. Current production capture, validator and native encoder. Does not exercise installed-extension iframe messaging.",
+  "viewport": "1280 x 720 in-app browser",
+  "valid": true,
+  "errors": [],
+  "diagnostics": {
+    "totalNodesCaptured": 454,
+    "totalTextNodes": 126,
+    "totalImages": 0,
+    "totalVectors": 63,
+    "totalUnsupported": 0,
+    "warnings": [
+      "Full page captures currently loaded content; scroll to load lazy sections before capturing."
+    ],
+    "durationMs": 18
+  },
+  "nativeStats": {
+    "layers": 731,
+    "text": 126,
+    "autoLayout": 332
+  },
+  "nativeWarnings": [
+    "Full page captures currently loaded content; scroll to load lazy sections before capturing.",
+    "Substituted Plus Jakarta Sans with bundled Inter to preserve visible editable text."
+  ]
+}

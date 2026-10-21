@@ -156,6 +156,7 @@ it('retains flow Auto Layout when children have differing cross-axis insets',asy
   expect(parsed.nodes.find(n=>n.name==='Capture')!.stackMode).toBe('VERTICAL');
   expect(parsed.nodes.filter(n=>n.name==='Row')).toHaveLength(2);
   expect(parsed.nodes.find(n=>n.name==='Row')!.stackHorizontalPadding).toBe(10);
+  expect(parsed.nodes.filter(n=>n.name==='Row').every(n=>n.stackPrimarySizing==='RESIZE_TO_FIT_WITH_IMPLICIT_SIZE')).toBe(true);
 });
 it('uses visual flow order for CSS-reordered children without changing measured coordinates',async()=>{
   const capture=doc([{...text,id:'bottom',name:'Bottom',bounds:{x:10,y:50,width:100,height:20}},{...text,id:'top',name:'Top',bounds:{x:10,y:10,width:100,height:20}}]);
@@ -170,6 +171,19 @@ it('exports a styled multiline paragraph as one editable TEXT with style overrid
  const parsed=(await parseFigmaClipboard((await buildNativeClipboard(capture)).html))!;const texts=parsed.nodes.filter(n=>n.type==='TEXT');expect(texts).toHaveLength(1);
  expect(texts[0].textData!.characters).toBe('Hello world again');expect(texts[0].textData!.styleOverrideTable!.some(s=>s.fontName?.style==='Bold')).toBe(true);expect(texts[0].derivedTextData!.baselines).toHaveLength(2);
  expect(texts[0].derivedTextData!.logicalIndexToCharacterOffsetMap![6]).toBeCloseTo(48);
+});
+it('serializes reflowing paragraph boxes and capped responsive frames into native sizing fields',async()=>{
+ const capture=doc([{...text,bounds:{x:0,y:0,width:300,height:42},textAutoResize:'HEIGHT'}]);
+ capture.root.sizing={vertical:'HUG',maxWidth:440};
+ const parsed=(await parseFigmaClipboard((await buildNativeClipboard(capture)).html))!;
+ expect(parsed.nodes.find(n=>n.type==='TEXT')!.textAutoResize).toBe('HEIGHT');
+ expect(parsed.nodes.find(n=>n.name==='Capture')!.maxSize?.value?.x).toBe(440);
+});
+it('preserves nested colour and font overrides in the actual clipboard payload',async()=>{
+ const capture=doc([{...text,characters:'Outer bold end',runs:[{start:0,end:6,style:text.style,fills:text.fills},{start:6,end:10,style:{...text.style,fontWeight:700},fills:[{type:'SOLID',color:{r:117/255,g:56/255,b:120/255,a:1}}]},{start:10,end:14,style:text.style,fills:text.fills}]}]);
+ const parsed=(await parseFigmaClipboard((await buildNativeClipboard(capture)).html))!;
+ const overrides=parsed.nodes.find(n=>n.type==='TEXT')!.textData!.styleOverrideTable!;
+ expect(overrides.some(style=>style.fontName?.style==='Bold'&&Math.abs(style.fillPaints![0].color!.r-117/255)<.001)).toBe(true);
 });
 it('applies row Auto Layout when a centered last grid row differs in width and source order',async()=>{
  const block=(id:string,x:number,y:number,w:number):any=>({...base,id,name:id,type:'FRAME',bounds:{x,y,width:w,height:30},fills:[],children:[]});

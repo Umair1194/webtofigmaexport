@@ -178,3 +178,26 @@ it('keeps modern shadow colours out of geometry and discards transparent utility
  const effects=parseBoxShadows('color(srgb 0.02 0.04 0.05 / 0.08) 0px 1px 2px -1px, oklab(0 0 0 / 0) 0px 0px 0px 10px, inset #12345678 0px 0px 0px 1px');
  expect(effects).toHaveLength(2);expect(effects[0].offset).toEqual({x:0,y:1});expect(effects[0].radius).toBe(2);expect(effects[0].spread).toBe(-1);expect(effects[0].color.a).toBe(.08);expect(effects[1].spread).toBe(1);expect(effects[1].color.a).toBeCloseTo(120/255);
 });
+
+describe('Rendered corner radius normalization',()=>{
+  it.each(['3.40282e+38px','9999999999px','calc(infinity * 1px)'])('reduces oversized fully rounded corners to the rendered pill: %s',value=>{
+    const result=parseCornerRadius(value,{tl:value,tr:value,br:value,bl:value},{width:120,height:32});
+    for(const corner of ['topLeft','topRight','bottomRight','bottomLeft'] as const)expect(result?.[corner]).toBeCloseTo(16,10);
+    expect(result?.isUniform).toBe(true);
+  });
+  it('scales asymmetric corners together instead of independently clamping each corner',()=>{
+    const result=parseCornerRadius('80px 40px 20px 10px',undefined,{width:100,height:60});
+    expect(result?.topLeft).toBeCloseTo(80*2/3,10);expect(result?.topRight).toBeCloseTo(40*2/3,10);
+    expect(result?.bottomRight).toBeCloseTo(20*2/3,10);expect(result?.bottomLeft).toBeCloseTo(10*2/3,10);
+    expect(result?.isUniform).toBe(false);
+  });
+  it('retains ordinary non-overlapping corners',()=>{
+    expect(parseCornerRadius('12px 6px',undefined,{width:120,height:32})).toEqual({topLeft:12,topRight:6,bottomRight:12,bottomLeft:6,isUniform:false});
+  });
+  it.each(['calc(50% - 2px)','NaN%','Infinity%','-10px'])('never emits non-finite or negative geometry for unsupported values: %s',value=>{
+    expect(parseCornerRadius(value,{tl:value,tr:value,br:value,bl:value},{width:120,height:32})).toBeUndefined();
+  });
+  it('bounds standalone oversized radii even without element dimensions',()=>{
+    expect(parseCornerRadius('3.40282e+38px')?.topLeft).toBe(1e6);
+  });
+});

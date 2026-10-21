@@ -29,10 +29,11 @@ export function inferAutoLayout(
   const itemSpacing = parsePx(gapStr);
 
   // Paddings
-  const paddingTop = parsePx(computedStyle.paddingTop || "0px");
-  const paddingRight = parsePx(computedStyle.paddingRight || "0px");
-  const paddingBottom = parsePx(computedStyle.paddingBottom || "0px");
-  const paddingLeft = parsePx(computedStyle.paddingLeft || "0px");
+  // CSS content starts inside the border; Figma's layout padding excludes its stroke.
+  const paddingTop = parsePx(computedStyle.paddingTop || "0px") + parsePx(computedStyle.borderTopWidth || "0px");
+  const paddingRight = parsePx(computedStyle.paddingRight || "0px") + parsePx(computedStyle.borderRightWidth || "0px");
+  const paddingBottom = parsePx(computedStyle.paddingBottom || "0px") + parsePx(computedStyle.borderBottomWidth || "0px");
+  const paddingLeft = parsePx(computedStyle.paddingLeft || "0px") + parsePx(computedStyle.borderLeftWidth || "0px");
 
   // Primary Axis Alignment (justify-content)
   const justify = (computedStyle.justifyContent || "flex-start").toLowerCase();

@@ -15,3 +15,16 @@ it('retains a whitespace text piece between styled sibling spans',()=>{
  const p=mergeParagraph([text('a','Hello',0,0),text('space',' ',40,0),text('b','world',48,0,700)],200,style)!;
  expect(p.characters).toBe('Hello world');expect(p.runs![1]).toMatchObject({start:5,end:6});
 });
+it('preserves deeply nested runs and their colours through repeated paragraph consolidation',()=>{
+ const purple=[{type:'SOLID',color:{r:.46,g:.22,b:.47,a:1}}];
+ const nested=mergeParagraph([text('a','outer ',0,0),{...text('b','bold',48,0,700),fills:purple}],200,style)!;
+ const outer=mergeParagraph([text('prefix','Before ',0,0),{...nested,bounds:{...nested.bounds,x:56}},text('after',' after',0,24)],400,style)!;
+ expect(outer.characters).toBe('Before outer bold after');
+ expect(outer.runs!.find(r=>r.start===13)).toMatchObject({end:17,style:{fontWeight:700},fills:purple});
+});
+it('keeps a lone block paragraph at its content width and moves measured ink into line-box coordinates',()=>{
+ const p=mergeParagraph([text('a','One paragraph',0,2)],440,style,0,0,{x:0,y:0,width:440,height:24})!;
+ expect(p.bounds).toEqual({x:0,y:0,width:440,height:24});expect(p.textAutoResize).toBe('HEIGHT');
+ expect(p.fragments![0].bounds.y).toBe(2);expect(p.characters).toBe('One paragraph');
+ expect(mergeParagraph([text('a','Inline',0,2)],440,style)).toBeUndefined();
+});

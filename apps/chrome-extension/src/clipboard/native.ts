@@ -1,6 +1,7 @@
 import { resolveSvgGradient, localSvgBounds } from './svg-paints.js';
 import { vectorNetwork, strokeOutline } from "./vector-geometry.js";
 import { applyMeasuredLayout } from "./measured-layout.js";
+import {applyResponsiveSizing} from './responsive-sizing.js';
 import { createTextRuntime } from "./text-runtime.js";
 import { SceneGraphDocument, SceneNode as CapturedNode, TextFragment, Paint, validateSceneGraph } from '@frameforge/scene-graph';
 import { hasDominantIframePlaceholder } from '@frameforge/shared-protocol';
@@ -114,7 +115,7 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
   const validation=validateSceneGraph(input);
   if(!validation.valid || !validation.document)throw new Error('Invalid capture: '+validation.errors.join('; '));
   const doc=validation.document;
-  if(hasDominantIframePlaceholder(doc.root))throw new Error('Embedded preview was not captured. Allow FrameForge access to all sites, reload the page, then capture again.');
+  if(hasDominantIframePlaceholder(doc.root))throw new Error('Embedded preview was not captured. Review the capture details in FrameForge for the specific failure, then capture again.');
   await initCodec();
   const graph=new SceneGraph(), page=graph.addPage('Web capture'), warnings=new Set(doc.diagnostics.warnings);
   const textFragments = new Map<string, TextFragment[]>();
@@ -124,6 +125,7 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
     const target=graph.createNode(source.type==='IMAGE'||source.type==='UNSUPPORTED'||source.type==='VECTOR'?'FRAME':source.type,parentId,{
       name:source.name,x:source.bounds.x,y:source.bounds.y,width:Math.max(.01,source.bounds.width),height:Math.max(.01,source.bounds.height),visible:source.visible,opacity:source.opacity,layoutPositioning:source.layoutPositioning || "AUTO",fills:[],strokes:[],clipsContent:false
     });
+    for(const key of ['minWidth','maxWidth','minHeight','maxHeight'] as const)if(source.sizing?.[key]!==undefined)target[key]=source.sizing[key]!;
     if('fills' in source)target.fills=(source.fills||[]).map(p=>paint(p,source.bounds.width,source.bounds.height));
     if('cornerRadius' in source && source.cornerRadius)Object.assign(target,{independentCorners:true,topLeftRadius:source.cornerRadius.topLeft,topRightRadius:source.cornerRadius.topRight,bottomLeftRadius:source.cornerRadius.bottomLeft,bottomRightRadius:source.cornerRadius.bottomRight});
     if('effects' in source)target.effects=(source.effects||[]).map(e=>({...e,color:'color' in e?e.color:black,offset:'offset' in e?e.offset:{x:0,y:0},spread:'spread' in e?e.spread:0,visible:e.visible!==false}));
@@ -138,12 +140,14 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
     }
     if(source.type==='TEXT')Object.assign(target,{text:source.characters,fontFamily:"Inter",fontSize:source.style.fontSize,fontWeight:source.style.fontWeight,italic:source.style.fontStyle==='italic',textAutoResize:'NONE',lineHeight:metric(source.style.lineHeight,source.style.fontSize),letterSpacing:metric(source.style.letterSpacing,source.style.fontSize)||0,textAlignHorizontal:source.style.textAlignHorizontal||'LEFT',textAlignVertical:source.style.textAlignVertical||'TOP',textCase:source.style.textCase||'ORIGINAL',textDecoration:source.style.textDecoration||'NONE'});
     if(source.type==='TEXT' && source.runs?.length)target.styleRuns=source.runs.map(run=>({start:run.start,length:run.end-run.start,style:{fontFamily:'Inter',fontWeight:run.style.fontWeight,italic:run.style.fontStyle==='italic',fontSize:run.style.fontSize,lineHeight:metric(run.style.lineHeight,run.style.fontSize),letterSpacing:metric(run.style.letterSpacing,run.style.fontSize)||0,textDecoration:run.style.textDecoration||'NONE',fills:run.fills.map(p=>paint(p,source.bounds.width,source.bounds.height))}}));
+    if(source.type==='TEXT' && source.textAutoResize==='HEIGHT')target.textAutoResize='HEIGHT';
     if(source.type==='TEXT' && source.fragments?.length) textFragments.set(target.id, source.fragments);
     if(source.type==='TEXT' && !/^Inter(?: Variable)?$/i.test(source.style.fontFamily)) warnings.add('Substituted '+source.style.fontFamily+' with bundled Inter to preserve visible editable text.');
     if(source.type==='FRAME') {
       target.clipsContent=!!source.clipsContent;
       for(const child of source.children)visit(child,target.id);
-      if(useLayout(source)){const a=source.autoLayout!;Object.assign(target,{layoutMode:a.layoutMode,itemSpacing:a.itemSpacing,paddingTop:a.paddingTop,paddingRight:a.paddingRight,paddingBottom:a.paddingBottom,paddingLeft:a.paddingLeft,primaryAxisAlign:a.primaryAxisAlignItems||'MIN',counterAxisAlign:a.counterAxisAlignItems||'MIN',primaryAxisSizing:'FIXED',counterAxisSizing:'FIXED'});}
+      const outputs=new Map(source.children.map((child,i)=>[child,graph.getNode(target.childIds[i])!]));
+      if(useLayout(source)){const a=source.autoLayout!;Object.assign(target,{layoutMode:a.layoutMode,itemSpacing:a.itemSpacing,paddingTop:a.paddingTop,paddingRight:a.paddingRight,paddingBottom:a.paddingBottom,paddingLeft:a.paddingLeft,primaryAxisAlign:a.primaryAxisAlignItems||'MIN',counterAxisAlign:a.counterAxisAlignItems||'MIN',primaryAxisSizing:'FIXED',counterAxisSizing:'FIXED'});applyResponsiveSizing(source,target,outputs);}
       else if(!applyMeasuredLayout(source,target,graph) && source.autoLayout && source.autoLayout.layoutMode!=='NONE') warnings.add('Preserved measured positions for overlapping or irregular content: '+source.name);
     }
     if(source.type==='VECTOR')try{svgLayers(source.svgContent,target,graph,warnings);}catch{warnings.add('SVG could not be converted: '+source.name);}

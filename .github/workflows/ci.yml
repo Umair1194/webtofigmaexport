@@ -16,6 +16,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: node scripts/probe-native-browser.mjs
+      # Compile the local browser lab; this is not a browser/Figma acceptance run.
+      - run: npm run quality:check
       - uses: actions/upload-artifact@v4
         with:
           name: frameforge-builds

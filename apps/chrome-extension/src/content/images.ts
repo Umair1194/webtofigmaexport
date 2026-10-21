@@ -1,3 +1,4 @@
+import { notifyRuntime } from "./runtime.js";
 import { fetchImageAsDataUrl } from '@frameforge/asset-pipeline';
 type ImageResult = {dataUrl?:string;error?:string};
 const maxChars = Math.ceil(2 * 1024 * 1024 * 4 / 3) + 256;
@@ -28,7 +29,7 @@ async function normalizeRaster(result:ImageResult, signal:AbortSignal):Promise<I
 async function fetchThroughExtension(url:string,signal:AbortSignal):Promise<ImageResult> {
   if(signal.aborted)return {error:'Capture cancelled'};
   const requestId='asset-'+Array.from(crypto.getRandomValues(new Uint32Array(2)),n=>n.toString(16)).join('-');
-  const cancel=()=>{void chrome.runtime.sendMessage({type:'CANCEL_CAPTURE_IMAGE',requestId}).catch(()=>{});};
+  const cancel=()=>{void notifyRuntime({type:'CANCEL_CAPTURE_IMAGE',requestId});};
   signal.addEventListener('abort',cancel,{once:true});
   try {
     const result=await chrome.runtime.sendMessage({type:'FETCH_CAPTURE_IMAGE',requestId,url});

@@ -2,7 +2,7 @@
 
 A Manifest V3 Chrome extension. Capture a viewport, full loaded page or selected element, then paste directly onto the Figma canvas as editable layers.
 
-**The primary workflow requires no Figma plugin.** “Copy to Figma” writes native Figma binary clipboard data as HTML. Paste onto the canvas with ⌘V / Ctrl+V. Text, frames, supported vector shapes, embedded images and compatible Auto Layout stacks remain editable. Native clipboard compatibility still needs real Figma canvas acceptance; automated decoding alone does not prove rendering fidelity.
+**The primary workflow requires no Figma plugin.** “Copy to Figma” writes native Figma binary clipboard data as HTML. Paste onto the canvas with ⌘V / Ctrl+V. Text, frames, supported vector shapes, embedded images and compatible Auto Layout stacks remain editable. Fixture captures have been checked in Figma web, including text edits and nested resizing; this does not guarantee fidelity on arbitrary sites. See [1.7.0 verification](docs/QUALITY_1.7.0.md).
 
 ## Build and test
 
@@ -22,7 +22,7 @@ The regression suite covers capture bounds, element picking, cancellation, stora
 1. Open `chrome://extensions` in Chrome or the equivalent page in a Chromium browser.
 2. Enable Developer mode and choose **Load unpacked**.
 3. Select `apps/chrome-extension/dist`.
-4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.6.0 corrects translucent borders, modern shadows, SVG gradients and form controls; saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
+4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.7.2 includes nested text styling, paragraph wrapping boxes, eligible content-driven sizing, oversized-corner normalization, clearer incomplete-capture recovery, and faster repeated text exports; take a fresh capture to get these fixes. Saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
 
 ## Optional legacy JSON importer
 
@@ -57,6 +57,9 @@ Processing is local and no telemetry or account backend is implemented. Remote i
 ## Audit and verification
 
 - [Screenshot fidelity review — 1.6.0](docs/SCREENSHOT_REVIEW_1.6.0.md)
+- [Performance audit — 1.7.2](docs/PERFORMANCE_1.7.2.md)
+- [Incomplete-capture recovery — 1.7.1](docs/QUALITY_1.7.1.md)
+- [Paragraph and resizing verification — 1.7.0](docs/QUALITY_1.7.0.md)
 - [Images, paragraphs and nested layout audit — 1.5.0](docs/BROWSER_EXTENSION_AUDIT_1.5.0.md)
 - [Gradient, image fitting and layout audit — 1.4.0](docs/BROWSER_EXTENSION_AUDIT_1.4.0.md)
 - [Browser extension audit and UI changes — 1.3.0](docs/BROWSER_EXTENSION_AUDIT_1.3.0.md)

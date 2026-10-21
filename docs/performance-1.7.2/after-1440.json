@@ -1,0 +1,1289 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": 1,
+  "profile": "core-browser-harness",
+  "build": {
+    "revision": "43b4a73068d6f8c30040baeb99433b01c5f31220",
+    "extensionVersion": "1.7.1"
+  },
+  "generatedAt": "2026-10-21T17:31:18.781Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "hardwareConcurrency": 10,
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "devicePixelRatio": 1
+  },
+  "repetitions": 3,
+  "warmups": 1,
+  "limitations": [
+    "Direct capture/encoder calls; installed extension messaging, permissions, storage and lifecycle are not measured.",
+    "Heap is sampled at stage boundaries and on a timer; this is not peak process memory. Unsupported heap/Long Task APIs are explicit.",
+    "Assets are tiny local cached data URLs; CDN, session and iframe paths require installed-extension acceptance.",
+    "One discarded warm-up per scenario; this does not measure extension cold start.",
+    "Figma host rendering, text editing and resizing remain pending manual checks."
+  ],
+  "figmaAcceptance": {
+    "status": "pending",
+    "results": []
+  },
+  "results": [
+    {
+      "scenario": "acceptance",
+      "status": "passed",
+      "source": {
+        "scenario": "acceptance",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "root": {
+          "width": 1120,
+          "height": 503
+        },
+        "elements": [
+          {
+            "id": "acceptance-hero",
+            "text": "A place for every detail.Editable text, nested layout, gentle borders, and original image colours.",
+            "bounds": {
+              "x": 33,
+              "y": 33,
+              "width": 1054,
+              "height": 90
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "24px",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-heading",
+            "text": "A place for every detail.",
+            "bounds": {
+              "x": 33,
+              "y": 44.5,
+              "width": 469.6,
+              "height": 36
+            },
+            "font": "700 30px / 36px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-subtitle",
+            "text": "Editable text, nested layout, gentle borders, and original image colours.",
+            "bounds": {
+              "x": 33,
+              "y": 90.5,
+              "width": 469.6,
+              "height": 21
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-gradient",
+            "text": "",
+            "bounds": {
+              "x": 927,
+              "y": 33,
+              "width": 160,
+              "height": 90
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) linear-gradient(120deg, rgb(230, 155, 57) 0%, rgb(217, 79, 116) 45%, rgb(86, 111, 206) 100%) repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-columns",
+            "text": "\n      Nested editable layoutReady for review\n      A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.\n      A sentence with one bold phrase and an explicit break.Keep this second line editable.\n      Deep styles: outer nested purple bold outer again normal.\n    Email addressContinue to your accountForms remain shapes and editable text; password values should stay private.",
+            "bounds": {
+              "x": 33,
+              "y": 147,
+              "width": 1054,
+              "height": 323
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "grid",
+            "gap": "24px",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-panel",
+            "text": "\n      Nested editable layoutReady for review\n      A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.\n      A sentence with one bold phrase and an explicit break.Keep this second line editable.\n      Deep styles: outer nested purple bold outer again normal.\n    ",
+            "bounds": {
+              "x": 33,
+              "y": 147,
+              "width": 515,
+              "height": 323
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "16px",
+            "padding": "20px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "1px solid rgb(221, 226, 220)"
+          },
+          {
+            "id": "acceptance-row",
+            "text": "Nested editable layoutReady for review",
+            "bounds": {
+              "x": 54,
+              "y": 168,
+              "width": 473,
+              "height": 58.57
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "12px",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "logo-gradient",
+            "text": "",
+            "bounds": {
+              "x": -160,
+              "y": -442,
+              "width": 0,
+              "height": 0
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "inline",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "gradient-logo",
+            "text": "",
+            "bounds": {
+              "x": 54,
+              "y": 177.28,
+              "width": 40,
+              "height": 40
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "inline",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-stack",
+            "text": "Nested editable layoutReady for review",
+            "bounds": {
+              "x": 106,
+              "y": 168,
+              "width": 179.16,
+              "height": 58.57
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "6px",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-paragraph",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 54,
+              "y": 242.57,
+              "width": 440,
+              "height": 63
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-rich",
+            "text": "A sentence with one bold phrase and an explicit break.Keep this second line editable.",
+            "bounds": {
+              "x": 54,
+              "y": 321.57,
+              "width": 440,
+              "height": 42
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-deep",
+            "text": "Deep styles: outer nested purple bold outer again normal.",
+            "bounds": {
+              "x": 54,
+              "y": 379.57,
+              "width": 440,
+              "height": 21
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-form",
+            "text": "Email addressContinue to your accountForms remain shapes and editable text; password values should stay private.",
+            "bounds": {
+              "x": 572,
+              "y": 147,
+              "width": 515,
+              "height": 323
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "16px",
+            "padding": "20px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "1px solid rgb(221, 226, 220)"
+          },
+          {
+            "id": "acceptance-images",
+            "text": "",
+            "bounds": {
+              "x": 593,
+              "y": 168,
+              "width": 473,
+              "height": 82
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "flex",
+            "gap": "12px",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-png",
+            "text": "",
+            "bounds": {
+              "x": 593,
+              "y": 168,
+              "width": 120,
+              "height": 82
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-webp",
+            "text": "",
+            "bounds": {
+              "x": 725,
+              "y": 168,
+              "width": 120,
+              "height": 82
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "acceptance-input",
+            "text": "",
+            "bounds": {
+              "x": 593,
+              "y": 287,
+              "width": 473,
+              "height": 43
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(0, 0, 0)",
+            "display": "inline-block",
+            "gap": "normal",
+            "padding": "10px 14px",
+            "background": "rgb(255, 255, 255) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "1px solid rgb(199, 207, 196)"
+          },
+          {
+            "id": "acceptance-button",
+            "text": "Continue to your account",
+            "bounds": {
+              "x": 593,
+              "y": 346,
+              "width": 473,
+              "height": 45
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(255, 255, 255)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "12px",
+            "background": "rgb(38, 62, 45) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(255, 255, 255)"
+          }
+        ]
+      },
+      "counts": {
+        "layers": 38,
+        "text": 11,
+        "autoLayout": 21,
+        "sourceElements": 34,
+        "capturedNodes": 36,
+        "imagePaints": 2
+      },
+      "summary": {
+        "captureMs": {
+          "median": 3,
+          "max": 6
+        },
+        "assetsMs": {
+          "median": 5,
+          "max": 5
+        },
+        "encodeMs": {
+          "median": 26,
+          "max": 26
+        },
+        "decodeMs": {
+          "median": 5,
+          "max": 6
+        },
+        "totalMs": {
+          "median": 41,
+          "max": 41
+        },
+        "maxFrameGapMs": {
+          "median": 25,
+          "max": 28
+        },
+        "longTaskMaxMs": {
+          "median": 0,
+          "max": 0
+        },
+        "clipboardBytes": {
+          "median": 179004,
+          "max": 179008
+        }
+      },
+      "samples": [
+        {
+          "captureMs": 2.3999999910593033,
+          "assetsMs": 4.5,
+          "encodeMs": 22.5,
+          "decodeMs": 4.600000008940697,
+          "totalMs": 34,
+          "maxFrameGapMs": 17.69999999999999,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 27951275,
+          "heapEndBytes": 33613929,
+          "maxObservedHeapBytes": 33613929,
+          "clipboardBytes": 179004,
+          "captureJsonBytes": 92232,
+          "counts": {
+            "layers": 38,
+            "text": 11,
+            "autoLayout": 21,
+            "sourceElements": 34,
+            "capturedNodes": 36,
+            "imagePaints": 2
+          },
+          "checks": {
+            "paragraphIsOneLayer": true,
+            "paragraphReflowBox": true,
+            "rasterImagesEmbedded": true,
+            "gradientPresent": true,
+            "nestedAutoLayoutPresent": true,
+            "nestedRichTextPreserved": true
+          },
+          "observations": {
+            "nestedPurpleBoldStylePreserved": true
+          },
+          "warnings": [
+            "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping."
+          ]
+        },
+        {
+          "captureMs": 3.2000000029802322,
+          "assetsMs": 5.399999991059303,
+          "encodeMs": 25.700000002980232,
+          "decodeMs": 6.299999997019768,
+          "totalMs": 40.599999994039536,
+          "maxFrameGapMs": 28.100000000000023,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 33985057,
+          "heapEndBytes": 33990733,
+          "maxObservedHeapBytes": 33990733,
+          "clipboardBytes": 179008,
+          "captureJsonBytes": 92232,
+          "counts": {
+            "layers": 38,
+            "text": 11,
+            "autoLayout": 21,
+            "sourceElements": 34,
+            "capturedNodes": 36,
+            "imagePaints": 2
+          },
+          "checks": {
+            "paragraphIsOneLayer": true,
+            "paragraphReflowBox": true,
+            "rasterImagesEmbedded": true,
+            "gradientPresent": true,
+            "nestedAutoLayoutPresent": true,
+            "nestedRichTextPreserved": true
+          },
+          "observations": {
+            "nestedPurpleBoldStylePreserved": true
+          },
+          "warnings": [
+            "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping."
+          ]
+        },
+        {
+          "captureMs": 5.5,
+          "assetsMs": 3.9000000059604645,
+          "encodeMs": 26.099999994039536,
+          "decodeMs": 5.300000011920929,
+          "totalMs": 40.80000001192093,
+          "maxFrameGapMs": 25.399999999999977,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 29812683,
+          "heapEndBytes": 41383249,
+          "maxObservedHeapBytes": 41383249,
+          "clipboardBytes": 179004,
+          "captureJsonBytes": 92231,
+          "counts": {
+            "layers": 38,
+            "text": 11,
+            "autoLayout": 21,
+            "sourceElements": 34,
+            "capturedNodes": 36,
+            "imagePaints": 2
+          },
+          "checks": {
+            "paragraphIsOneLayer": true,
+            "paragraphReflowBox": true,
+            "rasterImagesEmbedded": true,
+            "gradientPresent": true,
+            "nestedAutoLayoutPresent": true,
+            "nestedRichTextPreserved": true
+          },
+          "observations": {
+            "nestedPurpleBoldStylePreserved": true
+          },
+          "warnings": [
+            "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping."
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "cards-small",
+      "status": "passed",
+      "source": {
+        "scenario": "cards-small",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "root": {
+          "width": 1120,
+          "height": 1012.36
+        },
+        "elements": []
+      },
+      "counts": {
+        "layers": 117,
+        "text": 37,
+        "autoLayout": 68,
+        "sourceElements": 74,
+        "capturedNodes": 113,
+        "imagePaints": 12
+      },
+      "summary": {
+        "captureMs": {
+          "median": 9,
+          "max": 10
+        },
+        "assetsMs": {
+          "median": 0,
+          "max": 0
+        },
+        "encodeMs": {
+          "median": 39,
+          "max": 40
+        },
+        "decodeMs": {
+          "median": 4,
+          "max": 5
+        },
+        "totalMs": {
+          "median": 52,
+          "max": 54
+        },
+        "maxFrameGapMs": {
+          "median": 42,
+          "max": 49
+        },
+        "longTaskMaxMs": {
+          "median": 0,
+          "max": 0
+        },
+        "clipboardBytes": {
+          "median": 86124,
+          "max": 86124
+        }
+      },
+      "samples": [
+        {
+          "captureMs": 6.600000008940697,
+          "assetsMs": 0.09999999403953552,
+          "encodeMs": 34.5,
+          "decodeMs": 3.9000000059604645,
+          "totalMs": 45.1000000089407,
+          "maxFrameGapMs": 41.603999999999814,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 40650399,
+          "heapEndBytes": 46803950,
+          "maxObservedHeapBytes": 46803950,
+          "clipboardBytes": 86124,
+          "captureJsonBytes": 591925,
+          "counts": {
+            "layers": 117,
+            "text": 37,
+            "autoLayout": 68,
+            "sourceElements": 74,
+            "capturedNodes": 113,
+            "imagePaints": 12
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 8.799999997019768,
+          "assetsMs": 0.09999999403953552,
+          "encodeMs": 38.70000000298023,
+          "decodeMs": 4,
+          "totalMs": 51.599999994039536,
+          "maxFrameGapMs": 49.200000000000045,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 48085943,
+          "heapEndBytes": 31428293,
+          "maxObservedHeapBytes": 53026378,
+          "clipboardBytes": 86120,
+          "captureJsonBytes": 591925,
+          "counts": {
+            "layers": 117,
+            "text": 37,
+            "autoLayout": 68,
+            "sourceElements": 74,
+            "capturedNodes": 113,
+            "imagePaints": 12
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 9.700000002980232,
+          "assetsMs": 0.20000000298023224,
+          "encodeMs": 39.599999994039536,
+          "decodeMs": 4.700000002980232,
+          "totalMs": 54.20000000298023,
+          "maxFrameGapMs": 41.799999999999955,
+          "longTaskMaxMs": 0,
+          "longTasksSupported": true,
+          "heapStartBytes": 24636528,
+          "heapEndBytes": 33482995,
+          "maxObservedHeapBytes": 33482995,
+          "clipboardBytes": 86124,
+          "captureJsonBytes": 591926,
+          "counts": {
+            "layers": 117,
+            "text": 37,
+            "autoLayout": 68,
+            "sourceElements": 74,
+            "capturedNodes": 113,
+            "imagePaints": 12
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        }
+      ]
+    },
+    {
+      "scenario": "cards-medium",
+      "status": "passed",
+      "source": {
+        "scenario": "cards-medium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "root": {
+          "width": 1120,
+          "height": 4580.36
+        },
+        "elements": []
+      },
+      "counts": {
+        "layers": 565,
+        "text": 181,
+        "autoLayout": 324,
+        "sourceElements": 362,
+        "capturedNodes": 545,
+        "imagePaints": 60
+      },
+      "summary": {
+        "captureMs": {
+          "median": 21,
+          "max": 22
+        },
+        "assetsMs": {
+          "median": 0,
+          "max": 0
+        },
+        "encodeMs": {
+          "median": 88,
+          "max": 89
+        },
+        "decodeMs": {
+          "median": 6,
+          "max": 7
+        },
+        "totalMs": {
+          "median": 116,
+          "max": 116
+        },
+        "maxFrameGapMs": {
+          "median": 100,
+          "max": 100
+        },
+        "longTaskMaxMs": {
+          "median": 99,
+          "max": 100
+        },
+        "clipboardBytes": {
+          "median": 92328,
+          "max": 92328
+        }
+      },
+      "samples": [
+        {
+          "captureMs": 21.899999991059303,
+          "assetsMs": 0.10000000894069672,
+          "encodeMs": 88,
+          "decodeMs": 5.899999991059303,
+          "totalMs": 115.8999999910593,
+          "maxFrameGapMs": 100,
+          "longTaskMaxMs": 99,
+          "longTasksSupported": true,
+          "heapStartBytes": 68336080,
+          "heapEndBytes": 29791485,
+          "maxObservedHeapBytes": 74278254,
+          "clipboardBytes": 92328,
+          "captureJsonBytes": 2946475,
+          "counts": {
+            "layers": 565,
+            "text": 181,
+            "autoLayout": 324,
+            "sourceElements": 362,
+            "capturedNodes": 545,
+            "imagePaints": 60
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 21.099999994039536,
+          "assetsMs": 0.09999999403953552,
+          "encodeMs": 88.5,
+          "decodeMs": 6.700000002980232,
+          "totalMs": 116.3999999910593,
+          "maxFrameGapMs": 99.90000000000009,
+          "longTaskMaxMs": 100,
+          "longTasksSupported": true,
+          "heapStartBytes": 31353466,
+          "heapEndBytes": 45820233,
+          "maxObservedHeapBytes": 65642524,
+          "clipboardBytes": 92328,
+          "captureJsonBytes": 2946476,
+          "counts": {
+            "layers": 565,
+            "text": 181,
+            "autoLayout": 324,
+            "sourceElements": 362,
+            "capturedNodes": 545,
+            "imagePaints": 60
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 17.700000002980232,
+          "assetsMs": 0,
+          "encodeMs": 83.59999999403954,
+          "decodeMs": 5.9000000059604645,
+          "totalMs": 107.20000000298023,
+          "maxFrameGapMs": 91.79999999999973,
+          "longTaskMaxMs": 91,
+          "longTasksSupported": true,
+          "heapStartBytes": 45497069,
+          "heapEndBytes": 61558113,
+          "maxObservedHeapBytes": 61558113,
+          "clipboardBytes": 92324,
+          "captureJsonBytes": 2946475,
+          "counts": {
+            "layers": 565,
+            "text": 181,
+            "autoLayout": 324,
+            "sourceElements": 362,
+            "capturedNodes": 545,
+            "imagePaints": 60
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        }
+      ]
+    },
+    {
+      "scenario": "cards-large",
+      "status": "passed",
+      "source": {
+        "scenario": "cards-large",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "root": {
+          "width": 1120,
+          "height": 11270.36
+        },
+        "elements": []
+      },
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "summary": {
+        "captureMs": {
+          "median": 38,
+          "max": 38
+        },
+        "assetsMs": {
+          "median": 0,
+          "max": 0
+        },
+        "encodeMs": {
+          "median": 186,
+          "max": 190
+        },
+        "decodeMs": {
+          "median": 12,
+          "max": 12
+        },
+        "totalMs": {
+          "median": 236,
+          "max": 239
+        },
+        "maxFrameGapMs": {
+          "median": 200,
+          "max": 208
+        },
+        "longTaskMaxMs": {
+          "median": 203,
+          "max": 206
+        },
+        "clipboardBytes": {
+          "median": 109376,
+          "max": 109376
+        }
+      },
+      "samples": [
+        {
+          "captureMs": 38,
+          "assetsMs": 0.10000000894069672,
+          "encodeMs": 185.59999999403954,
+          "decodeMs": 12.400000005960464,
+          "totalMs": 236.1000000089407,
+          "maxFrameGapMs": 200,
+          "longTaskMaxMs": 203,
+          "longTasksSupported": true,
+          "heapStartBytes": 42859925,
+          "heapEndBytes": 86926371,
+          "maxObservedHeapBytes": 86926371,
+          "clipboardBytes": 109376,
+          "captureJsonBytes": 7361730,
+          "counts": {
+            "layers": 1405,
+            "text": 451,
+            "autoLayout": 804,
+            "sourceElements": 902,
+            "capturedNodes": 1355,
+            "imagePaints": 150
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 37.8999999910593,
+          "assetsMs": 0,
+          "encodeMs": 185.40000000596046,
+          "decodeMs": 11.299999997019768,
+          "totalMs": 234.59999999403954,
+          "maxFrameGapMs": 199.99999999999955,
+          "longTaskMaxMs": 202,
+          "longTasksSupported": true,
+          "heapStartBytes": 101829601,
+          "heapEndBytes": 52945938,
+          "maxObservedHeapBytes": 105790109,
+          "clipboardBytes": 109376,
+          "captureJsonBytes": 7361731,
+          "counts": {
+            "layers": 1405,
+            "text": 451,
+            "autoLayout": 804,
+            "sourceElements": 902,
+            "capturedNodes": 1355,
+            "imagePaints": 150
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 36.79999999701977,
+          "assetsMs": 0.09999999403953552,
+          "encodeMs": 189.6000000089407,
+          "decodeMs": 12.299999997019768,
+          "totalMs": 238.79999999701977,
+          "maxFrameGapMs": 208.10000000000036,
+          "longTaskMaxMs": 206,
+          "longTasksSupported": true,
+          "heapStartBytes": 42940941,
+          "heapEndBytes": 86970495,
+          "maxObservedHeapBytes": 86970495,
+          "clipboardBytes": 109376,
+          "captureJsonBytes": 7361731,
+          "counts": {
+            "layers": 1405,
+            "text": 451,
+            "autoLayout": 804,
+            "sourceElements": 902,
+            "capturedNodes": 1355,
+            "imagePaints": 150
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        }
+      ]
+    },
+    {
+      "scenario": "paragraphs",
+      "status": "passed",
+      "source": {
+        "scenario": "paragraphs",
+        "viewport": {
+          "width": 1440,
+          "height": 1000,
+          "devicePixelRatio": 1
+        },
+        "root": {
+          "width": 1120,
+          "height": 3828.36
+        },
+        "elements": [
+          {
+            "id": "long-paragraph-0",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 99.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-1",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 407.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-2",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 715.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-3",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 1023.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-4",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 1331.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-5",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 1639.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-6",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 1947.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-7",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 2255.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-8",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 2563.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-9",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 2871.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-10",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 3179.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          },
+          {
+            "id": "long-paragraph-11",
+            "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma. A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+            "bounds": {
+              "x": 33,
+              "y": 3487.36,
+              "width": 720,
+              "height": 294
+            },
+            "font": "14px / 21px Inter, Arial, sans-serif",
+            "color": "rgb(32, 39, 32)",
+            "display": "block",
+            "gap": "normal",
+            "padding": "0px",
+            "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+            "border": "0px none rgb(32, 39, 32)"
+          }
+        ]
+      },
+      "counts": {
+        "layers": 40,
+        "text": 13,
+        "autoLayout": 15,
+        "sourceElements": 13,
+        "capturedNodes": 28,
+        "imagePaints": 0
+      },
+      "summary": {
+        "captureMs": {
+          "median": 28,
+          "max": 30
+        },
+        "assetsMs": {
+          "median": 0,
+          "max": 0
+        },
+        "encodeMs": {
+          "median": 70,
+          "max": 76
+        },
+        "decodeMs": {
+          "median": 11,
+          "max": 11
+        },
+        "totalMs": {
+          "median": 107,
+          "max": 111
+        },
+        "maxFrameGapMs": {
+          "median": 83,
+          "max": 92
+        },
+        "longTaskMaxMs": {
+          "median": 86,
+          "max": 88
+        },
+        "clipboardBytes": {
+          "median": 311960,
+          "max": 311964
+        }
+      },
+      "samples": [
+        {
+          "captureMs": 29.799999997019768,
+          "assetsMs": 0,
+          "encodeMs": 69.79999999701977,
+          "decodeMs": 11.400000005960464,
+          "totalMs": 111,
+          "maxFrameGapMs": 83.30000000000018,
+          "longTaskMaxMs": 86,
+          "longTasksSupported": true,
+          "heapStartBytes": 32864747,
+          "heapEndBytes": 39820954,
+          "maxObservedHeapBytes": 83721407,
+          "clipboardBytes": 311960,
+          "captureJsonBytes": 48409,
+          "counts": {
+            "layers": 40,
+            "text": 13,
+            "autoLayout": 15,
+            "sourceElements": 13,
+            "capturedNodes": 28,
+            "imagePaints": 0
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 28.200000002980232,
+          "assetsMs": 0,
+          "encodeMs": 68.09999999403954,
+          "decodeMs": 10.900000005960464,
+          "totalMs": 107.20000000298023,
+          "maxFrameGapMs": 83.29999999999927,
+          "longTaskMaxMs": 82,
+          "longTasksSupported": true,
+          "heapStartBytes": 27269823,
+          "heapEndBytes": 87339547,
+          "maxObservedHeapBytes": 87339547,
+          "clipboardBytes": 311960,
+          "captureJsonBytes": 48409,
+          "counts": {
+            "layers": 40,
+            "text": 13,
+            "autoLayout": 15,
+            "sourceElements": 13,
+            "capturedNodes": 28,
+            "imagePaints": 0
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        },
+        {
+          "captureMs": 18.5,
+          "assetsMs": 0,
+          "encodeMs": 75.59999999403954,
+          "decodeMs": 10.700000002980232,
+          "totalMs": 104.79999999701977,
+          "maxFrameGapMs": 91.59999999999945,
+          "longTaskMaxMs": 88,
+          "longTasksSupported": true,
+          "heapStartBytes": 87755680,
+          "heapEndBytes": 56744261,
+          "maxObservedHeapBytes": 87755680,
+          "clipboardBytes": 311964,
+          "captureJsonBytes": 48409,
+          "counts": {
+            "layers": 40,
+            "text": 13,
+            "autoLayout": 15,
+            "sourceElements": 13,
+            "capturedNodes": 28,
+            "imagePaints": 0
+          },
+          "checks": {},
+          "observations": {},
+          "warnings": []
+        }
+      ]
+    }
+  ]
+}

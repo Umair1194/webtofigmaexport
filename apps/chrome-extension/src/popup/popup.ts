@@ -1,7 +1,7 @@
 import { copyNativeCapture } from '../clipboard/native.js';
 import { clearSavedCapture } from '../capture-store.js';
 import { SceneGraphDocument, validateSceneGraph } from '@frameforge/scene-graph';
-import { analyzeSceneGraph, generateDesignDoc, generateSkillDoc, sceneGraphToSvg } from '@frameforge/shared-protocol';
+import { hasDominantIframePlaceholder, analyzeSceneGraph, generateDesignDoc, generateSkillDoc, sceneGraphToSvg } from '@frameforge/shared-protocol';
 
 const element = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const btnRunCapture = element<HTMLButtonElement>('btn-run-capture');
@@ -22,7 +22,8 @@ function setBusy(value: boolean, label?: string) {
   for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('button'))) button.disabled = value || completed;
   element<HTMLFieldSetElement>('capture-options').disabled = value || completed;
   btnRunCapture.disabled = value || completed || restricted;
-  btnCopyFigma.disabled = value || !currentDocument;
+  element<HTMLButtonElement>('btn-retry-capture').disabled = value || completed || restricted;
+  btnCopyFigma.disabled = value || !currentDocument || hasDominantIframePlaceholder(currentDocument.root);
   element('capture-action-label').textContent = label || actionLabel();
   if(completed)element<HTMLButtonElement>('btn-done').disabled=false;
   for (const id of ['btn-download-json','btn-copy-svg','btn-download-design','btn-download-skill','btn-clear-capture']) element<HTMLButtonElement>(id).disabled = value || !currentDocument;
@@ -48,8 +49,20 @@ function displayCapturedDocument(doc: SceneGraphDocument) {
   element('stat-duration').textContent=doc.diagnostics.durationMs>=1000?(doc.diagnostics.durationMs/1000).toFixed(1)+'s':doc.diagnostics.durationMs+'ms';
   let host='';try{host=new URL(doc.url).hostname;}catch{}
   element('capture-source').textContent=doc.title+(host?' · '+host:'')+' · '+Math.round(doc.root.bounds.width)+' × '+Math.round(doc.root.bounds.height);
+  const recorded=new Date(doc.capturedAt);
+  element('capture-recorded').textContent=Number.isFinite(recorded.getTime())?'Saved '+recorded.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit'}):'Saved capture';
   const warnings=element('capture-warnings');warnings.replaceChildren();warnings.hidden=!doc.diagnostics.warnings.length;
   for(const warning of doc.diagnostics.warnings){const li=document.createElement('li');li.textContent=warning;warnings.appendChild(li);}
+  const incomplete=hasDominantIframePlaceholder(doc.root);
+  resultSummary.classList.toggle('incomplete',incomplete);
+  element('result-status').textContent=incomplete?'Embedded design missing':'Ready to copy';
+  element('result-recovery').hidden=!incomplete;
+  btnCopyFigma.hidden=incomplete;
+  element('btn-retry-capture').hidden=!incomplete;
+  if(incomplete){
+    resultSummary.querySelector('details')?.setAttribute('open','');
+    showNotice('warning','The embedded design is missing. Review the capture details below, then capture again.');
+  }
   populateIntelligence(doc);setBusy(busy);
 }
 function triggerDownload(content: string, filename: string, type = 'application/json') {
@@ -130,6 +143,7 @@ async function initialize() {
   })()]);
 }
 async function performCopy(doc: SceneGraphDocument, tabId?: number) {
+  if(hasDominantIframePlaceholder(doc.root))throw new Error('The embedded design is missing. Review the capture details below, then capture again.');
   setBusy(true,'Preparing editable layers…');element('btn-cancel-capture').hidden=true;
   const exported=await copyNativeCapture(doc);
   // Clipboard success and storage cleanup are distinct outcomes. A cleanup failure must
@@ -167,6 +181,7 @@ btnRunCapture.addEventListener('click',async()=>{
   }catch(error){showNotice('error',error instanceof Error?error.message:'Capture failed. Try again.');}
   finally{captureTab=null;requestId=null;element('btn-cancel-capture').hidden=true;setBusy(false);}
 });
+element('btn-retry-capture').addEventListener('click',()=>btnRunCapture.click());
 btnCopyFigma.addEventListener('click',async()=>{
   if(busy||!currentDocument||completed)return;
   const doc=currentDocument;revision++;setBusy(true,'Preparing editable layers…');

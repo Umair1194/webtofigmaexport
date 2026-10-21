@@ -7,10 +7,10 @@ import { fontFaces } from "./font-faces.js";
 
 const faces = new Map<string, Font>();
 function face(node: SceneNode): Font {
-  const key = `${node.fontWeight}:${node.italic}`;
+  const weight=Math.max(100,Math.min(900,Math.round(node.fontWeight/100)*100));
+  const key = `${weight}:${node.italic}`;
   let font = faces.get(key);
   if (!font) {
-    const weight=Math.max(100,Math.min(900,Math.round(node.fontWeight/100)*100));
     font = create(Buffer.from(fontFaces[weight+':'+node.italic])) as Font;
     faces.set(key, font);
   }
@@ -32,14 +32,38 @@ function outline(glyph: Glyph, scale: number): OutlineCommand[] {
 
 /** Shape real glyphs on TEXT nodes, without flattening them into VECTOR layers. */
 export function createTextRuntime(warnings: Set<string>, measured = new Map<string, TextFragment[]>()): FigNodeChangeExportRuntime {
+  // Cache only within this export. Bound text and outline retention on large/unique pages.
+  const layouts = new Map<Font, Map<string, ReturnType<Font['layout']>>>();
+  const outlines = new WeakMap<Glyph, Map<number, OutlineCommand[]>>();
+  let layoutEntries = 0, layoutCharacters = 0, outlineEntries = 0, outlineCommands = 0;
+  const features = { liga: true, kern: true };
+  const layout = (font: Font, value: string) => {
+    const cached = layouts.get(font)?.get(value);
+    if (cached) return cached;
+    const result = font.layout(value, features);
+    if (layoutEntries < 256 && value.length <= 512 && layoutCharacters + value.length <= 32768) {
+      let entries = layouts.get(font); if (!entries) layouts.set(font, entries = new Map());
+      entries.set(value, result); layoutEntries++; layoutCharacters += value.length;
+    }
+    return result;
+  };
+  const glyphOutline = (glyph: Glyph, scale: number) => {
+    const cached = outlines.get(glyph)?.get(scale);
+    if (cached) return cached;
+    const result = outline(glyph, scale);
+    if (outlineEntries < 1024 && outlineCommands + result.length <= 40000) {
+      let entries = outlines.get(glyph); if (!entries) outlines.set(glyph, entries = new Map());
+      entries.set(scale, result); outlineEntries++; outlineCommands += result.length;
+    }
+    return result;
+  };
   return {
     shapeText(node): ShapedText {
       const font = face(node), scale = node.fontSize / font.unitsPerEm;
       const lineHeight = node.lineHeight ?? (font.ascent - font.descent + font.lineGap) * scale;
       const text = node.textCase === 'UPPER' ? node.text.toUpperCase() : node.textCase === 'LOWER' ? node.text.toLowerCase() : node.textCase === 'TITLE' ? node.text.replace(/\b\p{L}/gu, c => c.toUpperCase()) : node.text;
-      const features = { liga: true, kern: true };
       const widthOf = (value: string, current=node) => {
-        const f=face(current),sc=current.fontSize/f.unitsPerEm, run = f.layout(value, features);
+        const f=face(current),sc=current.fontSize/f.unitsPerEm, run = layout(f, value);
         return run.advanceWidth * sc + Math.max(0, run.glyphs.length - 1) * current.letterSpacing;
       };
       // Line records keep UTF-16 character offsets, including spaces and explicit newlines.
@@ -71,7 +95,7 @@ export function createTextRuntime(warnings: Set<string>, measured = new Map<stri
         const styled={...node,...node.styleRuns.find(run=>line.start>=run.start&&line.start<run.start+run.length)?.style};
         const font=face(styled),scale=styled.fontSize/font.unitsPerEm,ascent=font.ascent*scale;
         const lineHeight=styled.lineHeight??(font.ascent-font.descent+font.lineGap)*scale;
-        const run = font.layout(line.text, features), width = widthOf(line.text,styled);
+        const run = layout(font, line.text), width = widthOf(line.text,styled);
         const horizontalScale = line.bounds ? (width > 0 ? line.bounds.width / width : 1) : Math.min(1, node.width / (width || 1));
         const drawnWidth = width * horizontalScale;
         let x = line.bounds?.x ?? (node.textAlignHorizontal === 'CENTER' ? (node.width - drawnWidth) / 2 : node.textAlignHorizontal === 'RIGHT' ? node.width - drawnWidth : 0);
@@ -82,7 +106,7 @@ export function createTextRuntime(warnings: Set<string>, measured = new Map<stri
           const p = run.positions[index], advance = (p.xAdvance * scale + (index < run.glyphs.length - 1 ? styled.letterSpacing : 0)) * horizontalScale;
           const charLength = Math.max(1, glyph.codePoints.reduce((n, cp) => n + (cp > 0xffff ? 2 : 1), 0));
           if (glyph.id === 0) warnings.add('Some characters are unavailable in the bundled font: ' + node.name);
-          const commands = outline(glyph, scale).map(command => ({ ...command, ...(command.x === undefined ? {} : { x: command.x * horizontalScale }), ...(command.x1 === undefined ? {} : { x1: command.x1 * horizontalScale }), ...(command.x2 === undefined ? {} : { x2: command.x2 * horizontalScale }) }));
+          const commands = glyphOutline(glyph, scale).map(command => ({ ...command, ...(command.x === undefined ? {} : { x: command.x * horizontalScale }), ...(command.x1 === undefined ? {} : { x1: command.x1 * horizontalScale }), ...(command.x2 === undefined ? {} : { x2: command.x2 * horizontalScale }) }));
           glyphs.push({ commands, x: x + p.xOffset * scale * horizontalScale, y: baselineY - p.yOffset * scale, fontSize: styled.fontSize, firstCharacter: character, advance });
           for (let j = 0; j < charLength && character + j < offsets.length; j++) offsets[character + j] = x - left;
           character += charLength; x += advance;

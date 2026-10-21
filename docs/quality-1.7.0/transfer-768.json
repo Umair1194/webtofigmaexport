@@ -1,0 +1,352 @@
+{
+  "build": {
+    "revision": "43b4a73068d6f8c30040baeb99433b01c5f31220",
+    "extensionVersion": "1.7.0"
+  },
+  "source": {
+    "scenario": "acceptance",
+    "viewport": {
+      "width": 768,
+      "height": 1000,
+      "devicePixelRatio": 1
+    },
+    "root": {
+      "width": 720,
+      "height": 764.57
+    },
+    "elements": [
+      {
+        "id": "acceptance-hero",
+        "text": "A place for every detail.Editable text, nested layout, gentle borders, and original image colours.",
+        "bounds": {
+          "x": 25,
+          "y": 25,
+          "width": 670,
+          "height": 90
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "24px",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-heading",
+        "text": "A place for every detail.",
+        "bounds": {
+          "x": 25,
+          "y": 25,
+          "width": 469.6,
+          "height": 36
+        },
+        "font": "700 30px / 36px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-subtitle",
+        "text": "Editable text, nested layout, gentle borders, and original image colours.",
+        "bounds": {
+          "x": 25,
+          "y": 71,
+          "width": 469.6,
+          "height": 21
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-gradient",
+        "text": "",
+        "bounds": {
+          "x": 605,
+          "y": 25,
+          "width": 90,
+          "height": 90
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(120deg, rgb(230, 155, 57) 0%, rgb(217, 79, 116) 45%, rgb(86, 111, 206) 100%) repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-columns",
+        "text": "\n      Nested editable layoutReady for review\n      A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.\n      A sentence with one bold phrase and an explicit break.Keep this second line editable.\n      Deep styles: outer nested purple bold outer again normal.\n    Email addressContinue to your accountForms remain shapes and editable text; password values should stay private.",
+        "bounds": {
+          "x": 25,
+          "y": 139,
+          "width": 670,
+          "height": 600.57
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "grid",
+        "gap": "24px",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-panel",
+        "text": "\n      Nested editable layoutReady for review\n      A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.\n      A sentence with one bold phrase and an explicit break.Keep this second line editable.\n      Deep styles: outer nested purple bold outer again normal.\n    ",
+        "bounds": {
+          "x": 25,
+          "y": 139,
+          "width": 670,
+          "height": 274.57
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "16px",
+        "padding": "20px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "1px solid rgb(221, 226, 220)"
+      },
+      {
+        "id": "acceptance-row",
+        "text": "Nested editable layoutReady for review",
+        "bounds": {
+          "x": 46,
+          "y": 160,
+          "width": 628,
+          "height": 58.57
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "12px",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "logo-gradient",
+        "text": "",
+        "bounds": {
+          "x": -24,
+          "y": -535,
+          "width": 0,
+          "height": 0
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "inline",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "gradient-logo",
+        "text": "",
+        "bounds": {
+          "x": 46,
+          "y": 169.28,
+          "width": 40,
+          "height": 40
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "inline",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-stack",
+        "text": "Nested editable layoutReady for review",
+        "bounds": {
+          "x": 98,
+          "y": 160,
+          "width": 179.16,
+          "height": 58.57
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "6px",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-paragraph",
+        "text": "A paragraph should remain one editable text layer, with its natural line wrapping preserved. Compare the line endings, paragraph width, and spacing after pasting into Figma.",
+        "bounds": {
+          "x": 46,
+          "y": 234.57,
+          "width": 440,
+          "height": 63
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-rich",
+        "text": "A sentence with one bold phrase and an explicit break.Keep this second line editable.",
+        "bounds": {
+          "x": 46,
+          "y": 313.57,
+          "width": 440,
+          "height": 42
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-deep",
+        "text": "Deep styles: outer nested purple bold outer again normal.",
+        "bounds": {
+          "x": 46,
+          "y": 371.57,
+          "width": 440,
+          "height": 21
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-form",
+        "text": "Email addressContinue to your accountForms remain shapes and editable text; password values should stay private.",
+        "bounds": {
+          "x": 25,
+          "y": 437.57,
+          "width": 670,
+          "height": 302
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "16px",
+        "padding": "20px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "1px solid rgb(221, 226, 220)"
+      },
+      {
+        "id": "acceptance-images",
+        "text": "",
+        "bounds": {
+          "x": 46,
+          "y": 458.57,
+          "width": 628,
+          "height": 82
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "flex",
+        "gap": "12px",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-png",
+        "text": "",
+        "bounds": {
+          "x": 46,
+          "y": 458.57,
+          "width": 120,
+          "height": 82
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-webp",
+        "text": "",
+        "bounds": {
+          "x": 178,
+          "y": 458.57,
+          "width": 120,
+          "height": 82
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(32, 39, 32)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "0px",
+        "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(32, 39, 32)"
+      },
+      {
+        "id": "acceptance-input",
+        "text": "",
+        "bounds": {
+          "x": 46,
+          "y": 577.57,
+          "width": 628,
+          "height": 43
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(0, 0, 0)",
+        "display": "inline-block",
+        "gap": "normal",
+        "padding": "10px 14px",
+        "background": "rgb(255, 255, 255) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "1px solid rgb(199, 207, 196)"
+      },
+      {
+        "id": "acceptance-button",
+        "text": "Continue to your account",
+        "bounds": {
+          "x": 46,
+          "y": 636.57,
+          "width": 628,
+          "height": 45
+        },
+        "font": "14px / 21px Inter, Arial, sans-serif",
+        "color": "rgb(255, 255, 255)",
+        "display": "block",
+        "gap": "normal",
+        "padding": "12px",
+        "background": "rgb(38, 62, 45) none repeat scroll 0% 0% / auto padding-box border-box",
+        "border": "0px none rgb(255, 255, 255)"
+      }
+    ]
+  },
+  "stats": {
+    "layers": 38,
+    "text": 11,
+    "autoLayout": 21
+  },
+  "warnings": [
+    "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping."
+  ],
+  "path": "lab → production native encoder → clipboard → Figma; installed extension messaging/storage not exercised"
+}

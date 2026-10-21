@@ -2,6 +2,10 @@
 
 The original audit is a historical snapshot. This document records the subsequent implementation and its limits.
 
+Latest release: [1.7.2 performance audit](PERFORMANCE_1.7.2.md): bounded text caches, large-page export measurements, cancellation and capture-limit stress checks, 209 passing tests. Includes [1.7.1 capture recovery](QUALITY_1.7.1.md) and the user-reported installed real-site success.
+
+Earlier follow-up: [1.7.0 paragraph and nested sizing verification](QUALITY_1.7.0.md), including actual Figma web edits and resizing, 181 passing tests and browser evidence at two widths.
+
 ## Implemented
 
 - Element selection retains the clicked target, including a click without prior hover. Keyboard selection, Esc cancellation and listener cleanup are covered by tests. Highlighting uses a separate overlay instead of changing webpage outlines.

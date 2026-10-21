@@ -156,6 +156,7 @@ async function buildNode(node: FFSceneNode, ctx: ImportContext): Promise<SceneNo
         if(run.style.letterSpacing)text.setRangeLetterSpacing(run.start,run.end,run.style.letterSpacing);
       }
       text.textAutoResize = "NONE"; text.resize(width, height);
+      if(node.textAutoResize==='HEIGHT')text.textAutoResize='HEIGHT';
       break;
     }
     case "RECTANGLE": {

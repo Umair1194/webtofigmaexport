@@ -40,6 +40,13 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
     enumeration(node.type, ["FRAME", "TEXT", "RECTANGLE", "IMAGE", "VECTOR", "LINE", "UNSUPPORTED"], `${path}.type`);
     if (!node.type) fail(path, "missing node type");
     enumeration(node.layoutPositioning, ["AUTO", "ABSOLUTE"], path + ".layoutPositioning");
+    if(node.sizing!==undefined){
+      if(!object(node.sizing))fail(path+'.sizing','expected sizing object');
+      else {
+        for(const axis of ['horizontal','vertical'])enumeration(node.sizing[axis],['FILL','HUG','FIXED'],path+'.sizing.'+axis);
+        for(const key of ['grow','minWidth','maxWidth','minHeight','maxHeight'])if(node.sizing[key]!==undefined)number(node.sizing[key],path+'.sizing.'+key,0,1e6);
+      }
+    }
     if (node.opacity !== undefined) number(node.opacity, `${path}.opacity`, 0, 1);
     if (node.bounds !== undefined) {
       if (!object(node.bounds)) fail(`${path}.bounds`, "expected bounds");
@@ -78,6 +85,7 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
       }
     }
     if (node.type === "TEXT") {
+      enumeration(node.textAutoResize, ['HEIGHT'], path + '.textAutoResize');
       if (typeof node.characters !== "string") fail(`${path}.characters`, "expected text");
       else textBytes += node.characters.length * 2;
       if (node.fragments !== undefined) {

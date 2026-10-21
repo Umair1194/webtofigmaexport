@@ -1,5 +1,6 @@
 import type { FrameNode, SceneNode as CapturedNode } from '@frameforge/scene-graph';
 import type { SceneGraph, SceneNode } from '@open-pencil/scene-graph';
+import {applyResponsiveSizing} from './responsive-sizing.js';
 
 interface MeasuredStack {
   vertical: boolean;
@@ -71,6 +72,7 @@ export function applyMeasuredLayout(source: FrameNode, target: SceneNode, graph:
     const available = (vertical ? source.bounds.width : source.bounds.height) - stack.crossLeading - stack.crossTrailing;
     if (Math.abs(breadth - available) <= 1) output.layoutAlignSelf = 'STRETCH';
   }
+  applyResponsiveSizing(source,target,outputs);
   return true;
 }
 
@@ -89,7 +91,7 @@ function applyMeasuredRows(source: FrameNode, target: SceneNode, graph: SceneGra
   for(const row of rows)row.sort((a,b)=>a.bounds.x-b.bounds.x);
   const groups: FrameNode[]=rows.map((children,i)=>{
     const x=0, y=Math.min(...children.map(c=>c.bounds.y));
-    return {type:'FRAME',id:source.id+':row:'+i,name:'Row '+(i+1),visible:true,opacity:1,fills:[],bounds:{x,y,width:source.bounds.width,height:Math.max(...children.map(c=>c.bounds.y+c.bounds.height))-y},children:children.map(c=>({...c,bounds:{...c.bounds,x:c.bounds.x-x,y:c.bounds.y-y}}))};
+    return {type:'FRAME',id:source.id+':row:'+i,name:'Row '+(i+1),visible:true,opacity:1,fills:[],sizing:{vertical:'HUG'},bounds:{x,y,width:source.bounds.width,height:Math.max(...children.map(c=>c.bounds.y+c.bounds.height))-y},children:children.map(c=>({...c,bounds:{...c.bounds,x:c.bounds.x-x,y:c.bounds.y-y}}))};
   });
   if(groups.some(group=>!candidate(group,false)))return false;
   const absolute=source.children.filter(c=>!flow.includes(c));
@@ -111,7 +113,7 @@ function applyInsetStack(source:FrameNode,target:SceneNode,graph:SceneGraph):boo
   if(flow.length<2)return false;
   for(const vertical of [true,false]){
     const ordered=[...flow].sort((a,b)=>vertical?a.bounds.y-b.bounds.y:a.bounds.x-b.bounds.x);
-    const groups:FrameNode[]=ordered.map((child,i)=>({type:'FRAME',id:source.id+':inset:'+i,name:vertical?'Row':'Column',visible:true,opacity:1,fills:[],bounds:vertical?{x:0,y:child.bounds.y,width:source.bounds.width,height:child.bounds.height}:{x:child.bounds.x,y:0,width:child.bounds.width,height:source.bounds.height},children:[{...child,bounds:{...child.bounds,x:vertical?child.bounds.x:0,y:vertical?0:child.bounds.y}}]}));
+    const groups:FrameNode[]=ordered.map((child,i)=>({type:'FRAME',id:source.id+':inset:'+i,name:vertical?'Row':'Column',visible:true,opacity:1,fills:[],sizing:{vertical:'HUG'},bounds:vertical?{x:0,y:child.bounds.y,width:source.bounds.width,height:child.bounds.height}:{x:child.bounds.x,y:0,width:child.bounds.width,height:source.bounds.height},children:[{...child,bounds:{...child.bounds,x:vertical?child.bounds.x:0,y:vertical?0:child.bounds.y}}]}));
     if(groups.some(group=>!candidate(group,vertical)))continue;
     const absolute=source.children.filter(c=>!flow.includes(c)),projected={...source,children:[...groups,...absolute]};
     if(!candidate(projected,vertical))continue;

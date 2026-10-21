@@ -1,4 +1,5 @@
 import { mergeParagraph } from './paragraph.js';
+import {captureSizing} from './sizing.js';
 import { normalizeCapturedText, measureTextFragments } from "./text-layout.js";
 import {
   BoundingBox,
@@ -138,6 +139,7 @@ function* traverse(
       id,
       name,
       type: "IMAGE",
+      sizing:captureSizing(rootElement,computed),
       bounds,
       visible,
       opacity,
@@ -157,6 +159,7 @@ function* traverse(
       id,
       name,
       type: "VECTOR",
+      sizing:captureSizing(rootElement,computed),
       bounds,
       visible,
       opacity,
@@ -274,6 +277,7 @@ function* traverse(
       cornerRadius,
       effects,
       clipsContent: true,
+      sizing:captureSizing(rootElement,computed),
       children,
     } as FrameNode;
   }
@@ -396,7 +400,11 @@ function* traverse(
   }
   const textOnlyFlow = !rootElement.shadowRoot && !['flex','inline-flex','grid','inline-grid'].includes(computed.display) && Array.from(rootElement.children).every(el=>inlineOnly(el));
   if(textOnlyFlow){
-    const paragraph=mergeParagraph(children,bounds.width,parseTypography(computed),parseFloat(computed.paddingLeft)||0,parseFloat(computed.paddingRight)||0);
+    const inset=(side:string)=>(parseFloat(computed.getPropertyValue('padding-'+side))||0)+(parseFloat(computed.getPropertyValue('border-'+side+'-width'))||0);
+    const left=inset('left'),right=inset('right'),top=inset('top'),bottom=inset('bottom');
+    const block=['block','flow-root','list-item'].includes(computed.display)&&!['nowrap','pre'].includes(computed.whiteSpace);
+    const contentBox=block?{x:left,y:top,width:Math.max(.01,bounds.width-left-right),height:Math.max(.01,bounds.height-top-bottom)}:undefined;
+    const paragraph=mergeParagraph(children,bounds.width,parseTypography(computed),left,right,contentBox);
     if(paragraph){children.splice(0,children.length,paragraph);}
   }
 
@@ -428,6 +436,7 @@ function* traverse(
     effects,
     clipsContent,
     autoLayout,
+    sizing: captureSizing(rootElement,computed),
     children,
   } as FrameNode;
 }
@@ -492,6 +501,7 @@ function* captureDocument(
     visible: true, opacity: 1, clipsContent: true,
     fills: mode === "SELECTED_ELEMENT" ? [] : parseFills(window.getComputedStyle(document.documentElement), {width:rootWidth,height:rootHeight}),
     children: rootSceneNode ? [rootSceneNode] : [],
+    sizing: mode==='SELECTED_ELEMENT'&&rootSceneNode?.sizing?.vertical==='HUG'?{vertical:'HUG'}:undefined,
   };
   if (rootFrame.fills.length === 0 && mode !== "SELECTED_ELEMENT") rootFrame.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1, a: 1 } }];
 

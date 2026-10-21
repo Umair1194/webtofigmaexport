@@ -107,6 +107,12 @@ export interface BaseNode {
   opacity: number; // 0 to 1
   zIndex?: number;
   layoutPositioning?: "AUTO" | "ABSOLUTE";
+  sizing?: {
+    horizontal?: 'FILL' | 'HUG' | 'FIXED';
+    vertical?: 'FILL' | 'HUG' | 'FIXED';
+    grow?: number;
+    minWidth?: number; maxWidth?: number; minHeight?: number; maxHeight?: number;
+  };
   sourceTag?: string;
   sourceRole?: string;
   sourceClasses?: string[];
@@ -152,6 +158,8 @@ export interface TextFragment {
 
 export interface TextNode extends BaseNode {
   type: "TEXT";
+  /** Captured block content box supports native reflow; absent on legacy/positioned text. */
+  textAutoResize?: "HEIGHT";
   characters: string;
   fragments?: TextFragment[];
   runs?: {start:number;end:number;style:TypographyStyle;fills:Paint[]}[];

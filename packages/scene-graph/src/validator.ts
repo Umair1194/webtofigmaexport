@@ -66,6 +66,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
     visible,
     opacity,
     layoutPositioning: n.layoutPositioning === "ABSOLUTE" ? "ABSOLUTE" as const : "AUTO" as const,
+    sizing: n.sizing && typeof n.sizing === 'object' ? {...n.sizing} : undefined,
     sourceTag: typeof n.sourceTag === "string" ? n.sourceTag : undefined,
     sourceRole: typeof n.sourceRole === "string" ? n.sourceRole : undefined,
     sourceClasses: Array.isArray(n.sourceClasses) ? (n.sourceClasses as string[]) : undefined,
@@ -100,6 +101,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
       return {
         ...base,
         type: "TEXT",
+        textAutoResize: n.textAutoResize === 'HEIGHT' ? 'HEIGHT' : undefined,
         characters,
         runs: Array.isArray(n.runs) ? n.runs.map((r:any)=>({start:r.start,end:r.end,style:r.style,fills:r.fills})) : undefined,
         fragments: Array.isArray(n.fragments) ? n.fragments.map((f: any) => ({ start: f.start, end: f.end, bounds: validateBounds(f.bounds) })) : undefined,

@@ -24,3 +24,38 @@ it('discovers iframes inside the selected shadow host itself',()=>{
   expect(result.frames.size).toBe(1);
   expect(result.keys.get(host.shadowRoot!.querySelector('iframe') as any)).toBeTruthy();
 });
+it.each(['budget','depth','identity'])('explains skipped embedded capture: %s',async(reason)=>{
+  const main=document();main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1}];
+  vi.stubGlobal('chrome',{runtime:{sendMessage:vi.fn(async()=>({status:'ok'}))}});
+  await captureEmbeddedFrames(main,new Map(),new AbortController().signal,reason==='depth'?4:0,reason==='budget'?1:2500);
+  expect(main.diagnostics.warnings.join(' ')).toContain(reason==='budget'?'node limit':reason==='depth'?'depth limit':'could not be matched');
+});
+it('preserves the specific preparation error when extension messaging fails',async()=>{
+  const main=document();main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1}];
+  vi.stubGlobal('chrome',{runtime:{sendMessage:vi.fn(async()=>{throw new Error('Extension context invalidated');})}});
+  await captureEmbeddedFrames(main,new Map(),new AbortController().signal,0);
+  expect(main.diagnostics.warnings.join(' ')).toContain('Extension context invalidated');
+});
+it('reports invalid child field paths without substituting a permission error or composing rejected data',async()=>{
+  const main=document(),embedded=document();const key='fframe-12345678-1234-1234-1234-123456789012';
+  embedded.root.bounds={...box,width:-1};
+  const placeholder={id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1,attributes:{frameKey:key}};
+  main.root.children=[placeholder];
+  vi.stubGlobal('chrome',{runtime:{sendMessage:vi.fn(async()=>({status:'ok',document:embedded}))}});
+  await captureEmbeddedFrames(main,new Map([[key,{contentWindow:{postMessage:vi.fn()}} as any]]),new AbortController().signal,0);
+  expect(main.root.children[0]).toBe(placeholder);
+  const warning=main.diagnostics.warnings.join(' ');
+  expect(warning).toContain('Frame returned invalid content: root.bounds.width: expected finite number');
+  expect(warning).not.toContain('Allow FrameForge access');
+});
+it('accepts an embedded scene containing a normalized Chromium-sized fully rounded corner',async()=>{
+  const {parseCornerRadius}=await import('@frameforge/style-normalizer');
+  const main=document(),embedded=document();const key='fframe-12345678-1234-1234-1234-123456789012';
+  embedded.root.cornerRadius=parseCornerRadius('3.40282e+38px',undefined,box);
+  main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1,attributes:{frameKey:key}}];
+  vi.stubGlobal('chrome',{runtime:{sendMessage:vi.fn(async()=>({status:'ok',document:embedded}))}});
+  await captureEmbeddedFrames(main,new Map([[key,{contentWindow:{postMessage:vi.fn()}} as any]]),new AbortController().signal,0);
+  expect(main.root.children[0].type).toBe('FRAME');
+  expect(main.root.children[0].children[0].cornerRadius.topLeft).toBeCloseTo(100);
+  expect(main.diagnostics.warnings).toEqual([]);
+});

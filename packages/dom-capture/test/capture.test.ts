@@ -35,6 +35,10 @@ describe("DOM Capture — Privacy & Redaction", () => {
 });
 
 describe("DOM Capture — Auto Layout Inference", () => {
+  it('includes CSS borders in the content inset so full-width children can resize accurately',()=>{
+    const layout=inferAutoLayout({display:'flex',flexDirection:'column',paddingLeft:'20px',paddingRight:'20px',borderLeftWidth:'1px',borderRightWidth:'1px'},2)!;
+    expect(layout.paddingLeft).toBe(21);expect(layout.paddingRight).toBe(21);
+  });
   it("infers horizontal Auto Layout for flex row with gap", () => {
     const computed = {
       display: "flex",

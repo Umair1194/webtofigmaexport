@@ -1,3 +1,4 @@
+import { notifyRuntime } from "./runtime.js";
 import { FrameNode, SceneGraphDocument, SceneNode, validateSceneGraph } from "@frameforge/scene-graph";
 
 export function collectFrames(target: Element) {
@@ -18,12 +19,21 @@ export function collectFrames(target: Element) {
 // Only frame identification tokens cross the page's postMessage channel.
 // Captured content is returned through Chrome's private extension messaging.
 export function registerFrameIdentityListener() {
-  window.addEventListener("message", event => {
+  const identify = async (event: MessageEvent) => {
     if (window === window.top || event.source !== window.parent || event.data?.type !== "FRAMEFORGE_IDENTIFY_FRAME") return;
     const token = event.data.token;
     if (typeof token !== "string" || !/^fframe-[\w-]{20,80}$/.test(token)) return;
-    void chrome.runtime.sendMessage({ type: "REGISTER_CAPTURE_FRAME", token }).catch(() => {});
-  });
+    try {
+      // Invalidated extension contexts can throw before a Promise is returned.
+      await chrome.runtime.sendMessage({ type: "REGISTER_CAPTURE_FRAME", token });
+    } catch (error) {
+      if (/extension context invalidated/i.test(error instanceof Error ? error.message : String(error))) {
+        window.removeEventListener("message", identify);
+      }
+    }
+  };
+  window.addEventListener("message", identify);
+  return () => window.removeEventListener("message", identify);
 }
 
 export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map<string, HTMLIFrameElement>, signal: AbortSignal, depth: number, maxNodes = 2500) {
@@ -34,9 +44,12 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
     if (parent.type !== "FRAME") continue;
     parent.children.forEach((node, index) => { if (node.type === "UNSUPPORTED" && node.reason === "CROSS_ORIGIN_IFRAME") slots.push({ parent, index, node }); else stack.push(node); });
   }
+  const warn = (message: string) => { if (!doc.diagnostics.warnings.includes(message)) doc.diagnostics.warnings.push(message); };
   if (slots.length) {
-    const prepared = await chrome.runtime.sendMessage({ type: "PREPARE_CAPTURE_FRAMES" });
-    if (prepared?.status === "error") doc.diagnostics.warnings.push("Embedded frame access: " + prepared.error);
+    try {
+      const prepared = await chrome.runtime.sendMessage({ type: "PREPARE_CAPTURE_FRAMES" });
+      if (prepared?.status === "error") warn("Embedded frame access: " + prepared.error);
+    } catch (error) { warn("Embedded frame preparation failed: " + (error instanceof Error ? error.message : "extension unavailable")); }
   }
   const meaningful = slots.filter(slot => slot.node.bounds.width >= 2 && slot.node.bounds.height >= 2).length;
   let captured = 0;
@@ -45,8 +58,10 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
     const token = slot.node.attributes?.frameKey;
     const frame = token ? frames.get(token) : null;
     const remaining = maxNodes - doc.diagnostics.totalNodesCaptured;
-    if (!frame?.contentWindow || !token || remaining < 2 || depth >= 4) continue;
-    if (slot.node.bounds.width < 2 || slot.node.bounds.height < 2) continue;
+    if (slot.node.bounds.width < 2 || slot.node.bounds.height < 2 || slot.node.visible === false || slot.node.opacity === 0) continue;
+    if (remaining < 2) { warn("Embedded preview skipped: the capture reached its node limit. Select a smaller area."); continue; }
+    if (depth >= 4) { warn("Embedded preview skipped: the nested frame depth limit was reached."); continue; }
+    if (!frame?.contentWindow || !token) { warn("Embedded preview skipped: its frame could not be matched to the page. Reload the webpage and capture again."); continue; }
     let unregisterAbort = () => {};
     let identifyTimer: ReturnType<typeof setInterval> | undefined;
     try {
@@ -54,14 +69,18 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
       const identify = () => frame.contentWindow?.postMessage({ type: "FRAMEFORGE_IDENTIFY_FRAME", token }, "*");
       identify(); identifyTimer = setInterval(identify, 150);
       const aborted = new Promise<never>((_, reject) => {
-        const abort = () => { void chrome.runtime.sendMessage({ type: "CANCEL_CHILD_FRAME", token }).catch(() => {}); reject(new Error("Capture cancelled.")); };
+        const abort = () => { void notifyRuntime({ type: "CANCEL_CHILD_FRAME", token }); reject(new Error("Capture cancelled.")); };
         signal.addEventListener("abort", abort, { once: true }); unregisterAbort = () => signal.removeEventListener("abort", abort);
         if (signal.aborted) abort();
       });
       const response = await Promise.race([request, aborted]);
       if (response?.status !== "ok") throw new Error(response?.error || "Frame unavailable");
       const validated = validateSceneGraph(response.document);
-      if (!validated.valid || !validated.document) throw new Error("Frame returned invalid content");
+      if (!validated.valid || !validated.document) {
+        // Schema errors contain field paths and constraints, not captured text or assets.
+        const details = validated.errors.slice(0, 3).map(error => error.slice(0, 350)).join("; ");
+        throw new Error("Frame returned invalid content" + (details ? ": " + details : " (no validation details)"));
+      }
       const embedded = validated.document;
       const rename: SceneNode[] = [embedded.root];
       while (rename.length) { const node = rename.pop()!; node.id = token + ":" + node.id; if (node.type === "FRAME") rename.push(...node.children); }
@@ -76,7 +95,7 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
       captured++;
     } catch (error) {
       if (signal.aborted) throw error;
-      const warning = "Embedded preview unavailable: " + (error instanceof Error ? error.message : "unknown frame error") + ". Allow FrameForge access to all sites in extension settings, reload this page, and retry.";
+      const warning = "Embedded preview unavailable: " + (error instanceof Error ? error.message : "unknown frame error");
       if (!doc.diagnostics.warnings.includes(warning)) doc.diagnostics.warnings.push(warning);
     } finally { clearInterval(identifyTimer); unregisterAbort(); }
   }

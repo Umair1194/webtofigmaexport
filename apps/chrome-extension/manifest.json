@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FrameForge: Web to Editable Figma",
-  "version": "1.6.0",
+  "version": "1.7.2",
   "description": "Capture webpages as native, editable Figma layers with semantic Auto Layout and design intelligence.",
   "permissions": [
     "activeTab",

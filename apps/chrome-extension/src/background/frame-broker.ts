@@ -40,7 +40,7 @@ export function installFrameBroker() {
           const identity = early.get(token); early.delete(token);
           if (identity && identity.expires >= Date.now() && identity.tabId === tabId && identity.frameId !== frameId) { resolve(identity); return; }
           waiting.set(token, { owner, resolve, reject });
-          identityTimer = setTimeout(() => { waiting.delete(token); reject(new Error("No extension access to embedded preview. Reload this page after reloading the extension.")); }, 2000);
+          identityTimer = setTimeout(() => { waiting.delete(token); reject(new Error("The embedded frame did not respond to the extension. Reload the webpage after reloading FrameForge; check site access if this persists.")); }, 2000);
         });
         clearTimeout(identityTimer);
         running.set(token, { owner, child });

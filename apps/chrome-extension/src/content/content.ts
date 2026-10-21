@@ -1,3 +1,4 @@
+import { notifyRuntime } from "./runtime.js";
 import { saveCapture, clearSavedCapture } from "../capture-store.js";
 import { copyCaptureInPage } from "../clipboard/client.js";
 import { collectFrames, captureEmbeddedFrames, registerFrameIdentityListener } from "./frames.js";
@@ -68,7 +69,7 @@ if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
     stopMode(); panel?.remove();
     const controller = new AbortController(); activeCapture = controller;
     const started = performance.now();
-    const reportStage = (stage: string) => { if (!embedded && options.requestId) void chrome.runtime.sendMessage({type:'CAPTURE_PROGRESS',requestId:options.requestId,stage}).catch(()=>{}); };
+    const reportStage = (stage: string) => { if (!embedded && options.requestId) void notifyRuntime({type:'CAPTURE_PROGRESS',requestId:options.requestId,stage}); };
     let timedOut = false, copied = false;
     const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
     if (!embedded) showPanel("Capturing editable layers…", [{ label: "Cancel", run: () => controller.abort() }]);

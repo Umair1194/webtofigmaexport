@@ -19,38 +19,38 @@ export function parseCornerRadius(
   individual?: { tl?: string; tr?: string; br?: string; bl?: string },
   referenceSize?: { width: number; height: number }
 ): CornerRadius | undefined {
-  const radius = (value: string) => value.includes("%") ? Math.max(0, parseFloat(value) / 100 * (referenceSize ? Math.min(referenceSize.width, referenceSize.height) : 100)) : Math.max(0, parsePx(value));
+  const extent = referenceSize ? Math.max(0, Math.min(referenceSize.width, referenceSize.height)) : 100;
+  const radius = (value: string) => {
+    // Chromium can serialize a fully rounded CSS radius as an enormous px value.
+    // Handle the common computed infinity expression without leaking NaN/Infinity.
+    if (/^calc\(\s*infinity\s*\*\s*1px\s*\)$/i.test(value.trim())) return 1e150;
+    const parsed = parseFloat(value);
+    if (!Number.isFinite(parsed)) return 0;
+    const result = value.includes("%") ? parsed / 100 * extent : parsed;
+    return Number.isFinite(result) ? Math.min(1e150, Math.max(0, result)) : 0;
+  };
+  let values: number[];
   if (individual && (individual.tl || individual.tr || individual.br || individual.bl)) {
-    const tl = radius(individual.tl || "0");
-    const tr = radius(individual.tr || "0");
-    const br = radius(individual.br || "0");
-    const bl = radius(individual.bl || "0");
-    const isUniform = tl === tr && tr === br && br === bl;
-    if (tl === 0 && tr === 0 && br === 0 && bl === 0) return undefined;
-    return { topLeft: tl, topRight: tr, bottomRight: br, bottomLeft: bl, isUniform };
+    values = [individual.tl, individual.tr, individual.br, individual.bl].map(value => radius(value || "0"));
+  } else {
+    if (!radiusStr || radiusStr === "0px" || radiusStr === "0") return;
+    // Keep a computed calc() value together when expanding CSS shorthand.
+    const parts = (radiusStr.split("/")[0].trim().match(/calc\([^)]*\)|[^\s]+/g) || []).map(radius);
+    if (!parts.length) return;
+    values = [parts[0], parts[1] ?? parts[0], parts[2] ?? parts[0], parts[3] ?? parts[1] ?? parts[0]];
   }
-
-  if (!radiusStr || radiusStr === "0px" || radiusStr === "0") {
-    return undefined;
+  let [tl, tr, br, bl] = values;
+  if (referenceSize && Number.isFinite(referenceSize.width) && Number.isFinite(referenceSize.height)) {
+    const width = Math.max(0, referenceSize.width), height = Math.max(0, referenceSize.height);
+    // CSS scales all adjacent circular corners by one shared factor to prevent overlap.
+    const ratio = (size: number, sum: number) => sum > 0 ? size / sum : 1;
+    const scale = Math.min(1, ratio(width, tl + tr), ratio(width, bl + br), ratio(height, tl + bl), ratio(height, tr + br));
+    [tl, tr, br, bl] = values.map(value => value * scale);
   }
-
-  const parts = radiusStr.split("/")[0].trim().split(/\s+/).map(radius);
-  if (parts.length === 1) {
-    const r = parts[0];
-    if (r === 0) return undefined;
-    return { topLeft: r, topRight: r, bottomRight: r, bottomLeft: r, isUniform: true };
-  }
-  if (parts.length === 2) {
-    return { topLeft: parts[0], topRight: parts[1], bottomRight: parts[0], bottomLeft: parts[1], isUniform: false };
-  }
-  if (parts.length === 3) {
-    return { topLeft: parts[0], topRight: parts[1], bottomRight: parts[2], bottomLeft: parts[1], isUniform: false };
-  }
-  if (parts.length >= 4) {
-    return { topLeft: parts[0], topRight: parts[1], bottomRight: parts[2], bottomLeft: parts[3], isUniform: false };
-  }
-
-  return undefined;
+  // Standalone calls without element dimensions still obey the scene contract.
+  [tl, tr, br, bl] = [tl, tr, br, bl].map(value => Math.min(1e6, value));
+  if (tl === 0 && tr === 0 && br === 0 && bl === 0) return;
+  return { topLeft: tl, topRight: tr, bottomRight: br, bottomLeft: bl, isUniform: tl === tr && tr === br && br === bl };
 }
 
 export function parseBorders(

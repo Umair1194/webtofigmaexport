@@ -1,7 +1,7 @@
-import type { SceneNode, TextNode, TextFragment, TypographyStyle } from '@frameforge/scene-graph';
+import type { BoundingBox, SceneNode, TextNode, TextFragment, TypographyStyle } from '@frameforge/scene-graph';
 
 /** Consolidate text-only inline markup, retaining editable style ranges and measured glyph lines. */
-export function mergeParagraph(children:SceneNode[], width:number, style:TypographyStyle, paddingLeft=0, paddingRight=0):TextNode|undefined {
+export function mergeParagraph(children:SceneNode[], width:number, style:TypographyStyle, paddingLeft=0, paddingRight=0, contentBox?:BoundingBox):TextNode|undefined {
   const pieces:{node:TextNode;x:number;y:number}[]=[];
   function collect(node:SceneNode,x:number,y:number):boolean {
     if(!node.visible||node.opacity===0)return true;
@@ -11,18 +11,25 @@ export function mergeParagraph(children:SceneNode[], width:number, style:Typogra
     if(node.type!=='FRAME'||node.fills.some(p=>p.visible!==false&&(p.type!=='SOLID'||p.color.a>0))||node.strokes?.length||node.effects?.length||node.clipsContent)return false;
     return node.children.every(child=>collect(child,x,y));
   }
-  if(!children.every(child=>collect(child,0,0))||pieces.length<2||pieces.length>500)return;
+  if(!children.every(child=>collect(child,0,0))||pieces.length<(contentBox?1:2)||pieces.length>500)return;
   if(pieces.some(p=>p.node.fragments?.length)&&pieces.some(p=>p.node.characters.trim()&&!p.node.fragments?.length))return;
   // Different case transforms can change UTF-16 lengths; keep those layouts separate for now.
   if(pieces.some(p=>p.node.style.textCase!==style.textCase))return;
-  const x=Math.min(paddingLeft,...pieces.map(p=>p.x)),y=Math.min(...pieces.map(p=>p.y));
-  const right=Math.max(width-paddingRight,...pieces.map(p=>p.x+p.node.bounds.width));
-  const bottom=Math.max(...pieces.map(p=>p.y+p.node.bounds.height));
+  // A block paragraph wraps inside its content box, not its longest painted line.
+  // Keep glyph fragments relative to that box so initial appearance and later edits agree.
+  const x=contentBox?.x??Math.min(paddingLeft,...pieces.map(p=>p.x)),y=contentBox?.y??Math.min(...pieces.map(p=>p.y));
+  const right=contentBox?x+contentBox.width:Math.max(width-paddingRight,...pieces.map(p=>p.x+p.node.bounds.width));
+  const bottom=contentBox?y+contentBox.height:Math.max(...pieces.map(p=>p.y+p.node.bounds.height));
   let characters='';const fragments:TextFragment[]=[],runs:NonNullable<TextNode['runs']>=[];
   for(const piece of pieces){
     const start=characters.length;characters+=piece.node.characters;
-    runs.push({start,end:characters.length,style:piece.node.style,fills:piece.node.fills});
+    let cursor=0;
+    for(const run of piece.node.runs||[]){
+      if(run.start>cursor)runs.push({start:start+cursor,end:start+run.start,style:piece.node.style,fills:piece.node.fills});
+      runs.push({...run,start:start+run.start,end:start+run.end});cursor=run.end;
+    }
+    if(cursor<piece.node.characters.length)runs.push({start:start+cursor,end:characters.length,style:piece.node.style,fills:piece.node.fills});
     for(const fragment of piece.node.fragments||[])fragments.push({...fragment,start:start+fragment.start,end:start+fragment.end,bounds:{...fragment.bounds,x:piece.x-x+fragment.bounds.x,y:piece.y-y+fragment.bounds.y}});
   }
-  return {type:'TEXT',id:pieces[0].node.id+':paragraph',name:'Paragraph',bounds:{x,y,width:Math.max(.01,right-x),height:Math.max(.01,bottom-y)},visible:true,opacity:1,characters,fragments:fragments.length?fragments:undefined,runs,style,fills:pieces[0].node.fills};
+  return {type:'TEXT',id:pieces[0].node.id+':paragraph',name:pieces.length===1?pieces[0].node.name:'Paragraph',bounds:{x,y,width:Math.max(.01,right-x),height:Math.max(.01,bottom-y)},visible:true,opacity:1,characters,textAutoResize:contentBox?'HEIGHT':undefined,fragments:fragments.length?fragments:undefined,runs,style,fills:pieces[0].node.fills};
 }
