@@ -1,3 +1,6 @@
+import {FontRegistry} from './font-registry.js';
+import {exportScheduler} from './scheduling.js';
+import {serializeCapture} from './serialize.js';
 import { resolveSvgGradient, localSvgBounds } from './svg-paints.js';
 import { vectorNetwork, strokeOutline } from "./vector-geometry.js";
 import { applyMeasuredLayout } from "./measured-layout.js";
@@ -9,7 +12,7 @@ import { parseColor } from '@frameforge/style-normalizer';
 import { SceneGraph, computeImageHash, type Fill, type SceneNode } from '@open-pencil/scene-graph';
 import { initCodec } from '@open-pencil/kiwi/fig/codec';
 import { encodeFigmaClipboard, embedClipboardImages } from '@open-pencil/fig/clipboard';
-import { sceneNodeToKiwi, makeDocumentNodeChange, makeCanvasNodeChange, encodePathCommandsBlob, type OutlineCommand } from '@open-pencil/fig/node-change';
+import { makeDocumentNodeChange, makeCanvasNodeChange, encodePathCommandsBlob, type OutlineCommand } from '@open-pencil/fig/node-change';
 import svgpath from 'svgpath';
 
 const black = { r: 0, g: 0, b: 0, a: 1 };
@@ -111,16 +114,21 @@ function svgLayers(svg: string, parent: SceneNode, graph: SceneGraph, warnings: 
 
 export interface NativeExportStats { layers: number; text: number; autoLayout: number; }
 export interface NativeClipboardResult { html: string; warnings: string[]; stats: NativeExportStats; }
-export async function buildNativeClipboard(input: SceneGraphDocument): Promise<NativeClipboardResult> {
+export interface NativeExportOptions { signal?: AbortSignal; onClipboardWrite?: () => void; }
+export async function buildNativeClipboard(input: SceneGraphDocument, options: NativeExportOptions = {}): Promise<NativeClipboardResult> {
+  const scheduler=exportScheduler(options.signal);scheduler.check();
   const validation=validateSceneGraph(input);
   if(!validation.valid || !validation.document)throw new Error('Invalid capture: '+validation.errors.join('; '));
   const doc=validation.document;
   if(hasDominantIframePlaceholder(doc.root))throw new Error('Embedded preview was not captured. Review the capture details in FrameForge for the specific failure, then capture again.');
   await initCodec();
+  await scheduler.checkpoint(true);
   const graph=new SceneGraph(), page=graph.addPage('Web capture'), warnings=new Set(doc.diagnostics.warnings);
+  const fontRegistry=new FontRegistry(doc.fonts||[],warnings);
   const textFragments = new Map<string, TextFragment[]>();
   let textCharacters = 0;
-  function visit(source: CapturedNode, parentId: string): SceneNode {
+  function* visit(source: CapturedNode, parentId: string): Generator<void,SceneNode> {
+    yield;
     if(source.type === "TEXT" && (textCharacters += source.characters.length) > 200000) throw new Error("This capture contains too much text to copy at once. Choose a smaller section.");
     const target=graph.createNode(source.type==='IMAGE'||source.type==='UNSUPPORTED'||source.type==='VECTOR'?'FRAME':source.type,parentId,{
       name:source.name,x:source.bounds.x,y:source.bounds.y,width:Math.max(.01,source.bounds.width),height:Math.max(.01,source.bounds.height),visible:source.visible,opacity:source.opacity,layoutPositioning:source.layoutPositioning || "AUTO",fills:[],strokes:[],clipsContent:false
@@ -138,17 +146,34 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
       if(first.style==='dashed')target.dashPattern=[first.width*3,first.width*2];
       if(first.style==='dotted')target.dashPattern=[first.width,first.width];
     }
-    if(source.type==='TEXT')Object.assign(target,{text:source.characters,fontFamily:"Inter",fontSize:source.style.fontSize,fontWeight:source.style.fontWeight,italic:source.style.fontStyle==='italic',textAutoResize:'NONE',lineHeight:metric(source.style.lineHeight,source.style.fontSize),letterSpacing:metric(source.style.letterSpacing,source.style.fontSize)||0,textAlignHorizontal:source.style.textAlignHorizontal||'LEFT',textAlignVertical:source.style.textAlignVertical||'TOP',textCase:source.style.textCase||'ORIGINAL',textDecoration:source.style.textDecoration||'NONE'});
-    if(source.type==='TEXT' && source.runs?.length)target.styleRuns=source.runs.map(run=>({start:run.start,length:run.end-run.start,style:{fontFamily:'Inter',fontWeight:run.style.fontWeight,italic:run.style.fontStyle==='italic',fontSize:run.style.fontSize,lineHeight:metric(run.style.lineHeight,run.style.fontSize),letterSpacing:metric(run.style.letterSpacing,run.style.fontSize)||0,textDecoration:run.style.textDecoration||'NONE',fills:run.fills.map(p=>paint(p,source.bounds.width,source.bounds.height))}}));
-    if(source.type==='TEXT' && source.textAutoResize==='HEIGHT')target.textAutoResize='HEIGHT';
+    if(source.type==='TEXT')Object.assign(target,{text:source.characters,fontFamily:fontRegistry.resolve(source.style,source.characters,target.id),fontSize:source.style.fontSize,fontWeight:source.style.fontWeight,italic:source.style.fontStyle==='italic',textAutoResize:'NONE',lineHeight:metric(source.style.lineHeight,source.style.fontSize),letterSpacing:metric(source.style.letterSpacing,source.style.fontSize)||0,textAlignHorizontal:source.style.textAlignHorizontal||'LEFT',textAlignVertical:source.style.textAlignVertical||'TOP',textCase:source.style.textCase||'ORIGINAL',textDecoration:source.style.textDecoration||'NONE'});
+    if(source.type==='TEXT' && source.runs?.length)target.styleRuns=source.runs.map(run=>({start:run.start,length:run.end-run.start,style:{fontFamily:fontRegistry.resolve(run.style,source.characters,target.id),fontWeight:run.style.fontWeight,italic:run.style.fontStyle==='italic',fontSize:run.style.fontSize,lineHeight:metric(run.style.lineHeight,run.style.fontSize),letterSpacing:metric(run.style.letterSpacing,run.style.fontSize)||0,textDecoration:run.style.textDecoration||'NONE',fills:run.fills.map(p=>paint(p,source.bounds.width,source.bounds.height))}}));
+    if(source.type==='TEXT'){
+      target.fontVariations=fontRegistry.variations(target);
+      for(const run of target.styleRuns)run.style.fontVariations=fontRegistry.variations({...target,...run.style});
+    }
+    if(source.type==='TEXT' && source.textAutoResize)target.textAutoResize=source.textAutoResize;
     if(source.type==='TEXT' && source.fragments?.length) textFragments.set(target.id, source.fragments);
-    if(source.type==='TEXT' && !/^Inter(?: Variable)?$/i.test(source.style.fontFamily)) warnings.add('Substituted '+source.style.fontFamily+' with bundled Inter to preserve visible editable text.');
     if(source.type==='FRAME') {
       target.clipsContent=!!source.clipsContent;
-      for(const child of source.children)visit(child,target.id);
+      for(const child of source.children)yield* visit(child,target.id);
       const outputs=new Map(source.children.map((child,i)=>[child,graph.getNode(target.childIds[i])!]));
       if(useLayout(source)){const a=source.autoLayout!;Object.assign(target,{layoutMode:a.layoutMode,itemSpacing:a.itemSpacing,paddingTop:a.paddingTop,paddingRight:a.paddingRight,paddingBottom:a.paddingBottom,paddingLeft:a.paddingLeft,primaryAxisAlign:a.primaryAxisAlignItems||'MIN',counterAxisAlign:a.counterAxisAlignItems||'MIN',primaryAxisSizing:'FIXED',counterAxisSizing:'FIXED'});applyResponsiveSizing(source,target,outputs);}
       else if(!applyMeasuredLayout(source,target,graph) && source.autoLayout && source.autoLayout.layoutMode!=='NONE') warnings.add('Preserved measured positions for overlapping or irregular content: '+source.name);
+      for (const child of source.children) if (child.type === 'TEXT' && child.textAutoResize === 'WIDTH_AND_HEIGHT') {
+        // Cross-axis stretch wins over native auto-width in Figma and reintroduces
+        // wrapping when the host's font metrics differ by a fraction of a pixel.
+        const output = outputs.get(child)!;
+        output.layoutAlignSelf = 'AUTO'; output.layoutGrow = 0;
+      }
+      // Figma sibling order is paint order. Move resolved overlays without changing
+      // the sequence of normal Auto Layout children (including generated spacers).
+      const paintRank = new Map(source.children.map(child => {
+        const output = outputs.get(child)!;
+        return [output.id, target.layoutMode === 'NONE' || output.layoutPositioning === 'ABSOLUTE'
+          ? child.zIndex ?? (child.layoutPositioning === 'ABSOLUTE' ? .5 : 0) : 0];
+      }));
+      target.childIds.sort((a,b)=>(paintRank.get(a)??0)-(paintRank.get(b)??0));
     }
     if(source.type==='VECTOR')try{svgLayers(source.svgContent,target,graph,warnings);}catch{warnings.add('SVG could not be converted: '+source.name);}
     if(source.type==='IMAGE'||source.type==='UNSUPPORTED') {
@@ -164,9 +189,18 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
     }
     return target;
   }
-  const root=visit(doc.root,page.id), docGuid={sessionID:0,localID:0}, pageGuid={sessionID:0,localID:1}, blobs:Uint8Array[]=[];
-  const changes=[makeDocumentNodeChange(docGuid),makeCanvasNodeChange(pageGuid,docGuid,'!','Web capture'),...sceneNodeToKiwi(root,pageGuid,0,{value:100},graph,blobs,{fontDigestMap:new Map(),runtime:createTextRuntime(warnings,textFragments)})];
+  const iterator=visit(doc.root,page.id);let step=iterator.next();
+  while(!step.done){const wait=scheduler.checkpoint();if(wait)await wait;step=iterator.next();}
+  const root=step.value, docGuid={sessionID:0,localID:0}, pageGuid={sessionID:0,localID:1}, blobs:Uint8Array[]=[];
+  const changes=[makeDocumentNodeChange(docGuid),makeCanvasNodeChange(pageGuid,docGuid,'!','Web capture'),...await serializeCapture(root,pageGuid,graph,blobs,createTextRuntime(warnings,textFragments,node=>fontRegistry.face(node)),scheduler)];
   for (const change of changes) {
+    if (change.type === 'TEXT' && change.textAutoResize === 'WIDTH_AND_HEIGHT') {
+      // The serializer also materializes stretch inherited from the parent.
+      // Native auto-width labels must remain intrinsic on both axes.
+      delete change.stackChildAlignSelf; delete change.stackChildPrimaryGrow;
+    }
+    const fontNames=[change.fontName,...(change.textData?.styleOverrideTable||[]).map(style=>style.fontName),...(change.derivedTextData?.fontMetaData||[]).map(font=>font.key)];
+    for(const name of fontNames)if(name?.style==='Regular Italic')name.style='Italic';
     // OpenPencil scene enum CROP differs from the binary schema STRETCH.
     for(const p of [...(change.fillPaints||[]),...(change.strokePaints||[])]) if(p.imageScaleMode === "CROP") p.imageScaleMode="STRETCH";
     if (change.type === 'TEXT' && change.textData?.characters.trim()) {
@@ -174,12 +208,17 @@ export async function buildNativeClipboard(input: SceneGraphDocument): Promise<N
       if (!drawable) throw new Error('Text could not be shaped for "' + change.name + '". Export stopped to avoid copying invisible text.');
     }
   }
+  await scheduler.checkpoint(true);
   embedClipboardImages(changes,blobs,graph.images);
-  return {html:encodeFigmaClipboard(changes,blobs,Math.floor(Math.random()*0x7fffffff)),warnings:[...warnings],stats:{layers:changes.filter(n=>n.type!=="DOCUMENT"&&n.type!=="CANVAS").length,text:changes.filter(n=>n.type==="TEXT").length,autoLayout:changes.filter(n=>n.stackMode==="HORIZONTAL"||n.stackMode==="VERTICAL").length}};
+  const html=encodeFigmaClipboard(changes,blobs,Math.floor(Math.random()*0x7fffffff));
+  await scheduler.checkpoint(true);
+  return {html,warnings:[...warnings],stats:{layers:changes.filter(n=>n.type!=="DOCUMENT"&&n.type!=="CANVAS").length,text:changes.filter(n=>n.type==="TEXT").length,autoLayout:changes.filter(n=>n.stackMode==="HORIZONTAL"||n.stackMode==="VERTICAL").length}};
 }
 
-export async function copyNativeCapture(doc: SceneGraphDocument): Promise<Omit<NativeClipboardResult,"html">> {
-  const result=await buildNativeClipboard(doc);
+export async function copyNativeCapture(doc: SceneGraphDocument, options: NativeExportOptions = {}): Promise<Omit<NativeClipboardResult,"html">> {
+  const result=await buildNativeClipboard(doc,options);
+  if(options.signal?.aborted)throw new Error("Export cancelled. Your capture is still saved.");
+  options.onClipboardWrite?.();
   await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([result.html],{type:'text/html'}),'text/plain':new Blob(['FrameForge: paste onto the Figma canvas'],{type:'text/plain'})})]);
   return {warnings:result.warnings,stats:result.stats};
 }

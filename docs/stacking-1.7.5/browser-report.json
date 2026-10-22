@@ -1,0 +1,204 @@
+{
+  "badge": {
+    "lines": 1,
+    "resize": "WIDTH_AND_HEIGHT",
+    "size": {
+      "x": 97.390625,
+      "y": 15.5
+    },
+    "text": "Editorial accent"
+  },
+  "checks": {
+    "headerAbsolute": true,
+    "nowrap": true
+  },
+  "header": {
+    "borderBottomWeight": 1,
+    "borderLeftWeight": 0,
+    "borderRightWeight": 0,
+    "borderStrokeWeightsIndependent": true,
+    "borderTopWeight": 0,
+    "bordersTakeSpace": false,
+    "fillPaints": [
+      {
+        "blendMode": "NORMAL",
+        "color": {
+          "a": 1,
+          "b": 1,
+          "g": 1,
+          "r": 1
+        },
+        "opacity": 1,
+        "type": "SOLID",
+        "visible": true
+      }
+    ],
+    "frameMaskDisabled": true,
+    "guid": {
+      "localID": 1479,
+      "sessionID": 1
+    },
+    "minSize": {
+      "value": {
+        "x": 0,
+        "y": 63
+      }
+    },
+    "name": "Header",
+    "opacity": 1,
+    "parentIndex": {
+      "guid": {
+        "localID": 105,
+        "sessionID": 1
+      },
+      "position": "\""
+    },
+    "phase": "CREATED",
+    "pluginData": [
+      {
+        "key": "layoutDirection",
+        "pluginID": "open-pencil",
+        "value": "AUTO"
+      }
+    ],
+    "size": {
+      "x": 1544,
+      "y": 63
+    },
+    "stackCounterAlignItems": "CENTER",
+    "stackCounterSizing": "RESIZE_TO_FIT_WITH_IMPLICIT_SIZE",
+    "stackHorizontalPadding": 16,
+    "stackMode": "HORIZONTAL",
+    "stackPaddingBottom": 13,
+    "stackPaddingRight": 16,
+    "stackPositioning": "ABSOLUTE",
+    "stackPrimaryAlignItems": "MIN",
+    "stackPrimarySizing": "FIXED",
+    "stackSpacing": 12,
+    "stackVerticalPadding": 12,
+    "strokeAlign": "INSIDE",
+    "strokePaints": [
+      {
+        "blendMode": "NORMAL",
+        "color": {
+          "a": 1,
+          "b": 0.843137264251709,
+          "g": 0.8823529481887817,
+          "r": 0.91372549533844
+        },
+        "opacity": 1,
+        "type": "SOLID",
+        "visible": true
+      }
+    ],
+    "strokeWeight": 1,
+    "transform": {
+      "m00": 1,
+      "m01": 0,
+      "m02": 0,
+      "m10": 0,
+      "m11": 1,
+      "m12": 837
+    },
+    "type": "FRAME",
+    "visible": true
+  },
+  "nodes": [
+    {
+      "guid": {
+        "localID": 106,
+        "sessionID": 1
+      },
+      "name": "Main Content",
+      "parentIndex": {
+        "guid": {
+          "localID": 105,
+          "sessionID": 1
+        },
+        "position": "!"
+      },
+      "size": {
+        "x": 1544,
+        "y": 7697.5
+      },
+      "transform": {
+        "m00": 1,
+        "m01": 0,
+        "m02": 0,
+        "m10": 0,
+        "m11": 1,
+        "m12": 63
+      },
+      "type": "FRAME"
+    },
+    {
+      "guid": {
+        "localID": 108,
+        "sessionID": 1
+      },
+      "name": "Header",
+      "parentIndex": {
+        "guid": {
+          "localID": 107,
+          "sessionID": 1
+        },
+        "position": "!"
+      },
+      "size": {
+        "x": 1376,
+        "y": 145
+      },
+      "transform": {
+        "m00": 1,
+        "m01": 0,
+        "m02": 32,
+        "m10": 0,
+        "m11": 1,
+        "m12": 24
+      },
+      "type": "FRAME"
+    },
+    {
+      "guid": {
+        "localID": 1479,
+        "sessionID": 1
+      },
+      "name": "Header",
+      "parentIndex": {
+        "guid": {
+          "localID": 105,
+          "sessionID": 1
+        },
+        "position": "\""
+      },
+      "size": {
+        "x": 1544,
+        "y": 63
+      },
+      "stackPositioning": "ABSOLUTE",
+      "transform": {
+        "m00": 1,
+        "m01": 0,
+        "m02": 0,
+        "m10": 0,
+        "m11": 1,
+        "m12": 837
+      },
+      "type": "FRAME"
+    }
+  ],
+  "scrollY": 837,
+  "stats": {
+    "autoLayout": 919,
+    "layers": 1617,
+    "text": 454
+  },
+  "valid": true,
+  "warnings": [
+    "Substituted Plus Jakarta Sans 700 with Inter: matching web-font data was unavailable, unsupported, or missing required glyphs. Wrapping may differ after editing.",
+    "Substituted Plus Jakarta Sans 600 with Inter: matching web-font data was unavailable, unsupported, or missing required glyphs. Wrapping may differ after editing.",
+    "Preserved measured positions for overlapping or irregular content: div.flex",
+    "Some characters are unavailable in the selected export font: orange-700 → brand-p...",
+    "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping."
+  ]
+}

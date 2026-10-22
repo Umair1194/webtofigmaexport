@@ -365,6 +365,7 @@ function* traverse(
           opacity: 1,
           characters: textContent,
           fragments: fragments.length ? fragments : undefined,
+          textAutoResize: ['nowrap', 'pre'].includes(computed.whiteSpace) && !/[\r\n]/.test(textContent) ? 'WIDTH_AND_HEIGHT' : undefined,
           style: typography,
           fills: [{ type: "SOLID", color: textColor, visible: true }],
         } as TextNode);
@@ -381,8 +382,13 @@ function* traverse(
         depth + 1
       );
       if (childSceneNode) {
-        const position = window.getComputedStyle(childNode as Element).position;
-        childSceneNode.layoutPositioning = position === "absolute" || position === "fixed" ? "ABSOLUTE" : "AUTO";
+        const childStyle = window.getComputedStyle(childNode as Element);
+        const position = childStyle.position;
+        // Sticky geometry is already resolved at the captured scroll position.
+        // Keep it out of reconstructed flow so it cannot move with the content below it.
+        childSceneNode.layoutPositioning = ["absolute", "fixed", "sticky"].includes(position) ? "ABSOLUTE" : "AUTO";
+        const z = Number.parseInt(childStyle.zIndex, 10);
+        if (Number.isFinite(z) && (position !== 'static' || /flex|grid/.test(computed.display))) childSceneNode.zIndex = z;
         children.push(childSceneNode);
       }
     }
@@ -411,17 +417,14 @@ function* traverse(
   // Auto Layout inference
   const safeFlow = !bgImageUrl && !children.some(c => c.name.startsWith("::")) && Array.from(rootElement.children).every(el => {
     const cs = window.getComputedStyle(el);
-    return !["absolute", "fixed"].includes(cs.position) && [cs.marginTop, cs.marginRight, cs.marginBottom, cs.marginLeft].every(v => !parseFloat(v)) && !parseFloat(cs.flexGrow) && (cs.order === "0" || !cs.order);
+    return !["absolute", "fixed", "sticky"].includes(cs.position) && [cs.marginTop, cs.marginRight, cs.marginBottom, cs.marginLeft].every(v => !parseFloat(v)) && !parseFloat(cs.flexGrow) && (cs.order === "0" || !cs.order);
   });
   const autoLayout = options.inferAutoLayout !== false && safeFlow
     ? inferAutoLayout(computed, children.length)
     : undefined;
 
-  const clipsContent =
-    computed.overflow === "hidden" ||
-    computed.overflow === "clip" ||
-    computed.overflowX === "hidden" ||
-    computed.overflowY === "hidden";
+  const clipsContent = [computed.overflow, computed.overflowX, computed.overflowY]
+    .some(value => ['hidden', 'clip', 'auto', 'scroll'].includes(value));
 
   return {
     id,

@@ -1,3 +1,4 @@
+import { MAX_CAPTURED_FONTS, MAX_FONT_BYTES, MAX_TOTAL_FONT_BYTES } from './types.js';
 // Reject malformed nested fields before they can reach Figma API setters.
 export function preflightDocument(input: Record<string, unknown>): string[] {
   const errors: string[] = [];
@@ -30,6 +31,18 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
     } else fail(pp, "missing paint type");
     if (p.opacity !== undefined) number(p.opacity, `${pp}.opacity`, 0, 1);
   });
+  if(input.fonts!==undefined){
+    if(!Array.isArray(input.fonts)||input.fonts.length>MAX_CAPTURED_FONTS)fail('fonts','font count budget exceeded');
+    else {let total=0;for(const [index,font] of input.fonts.entries()){
+      const path='fonts['+index+']';if(!object(font)){fail(path,'expected font');continue;}
+      if(typeof font.family!=='string'||!font.family.trim()||font.family.length>256)fail(path+'.family','invalid family');
+      number(font.weightMin,path+'.weightMin',100,900);number(font.weightMax,path+'.weightMax',100,900);
+      if(font.weightMin>font.weightMax)fail(path,'invalid weight range');
+      enumeration(font.style,['normal','italic'],path+'.style');if(!font.style)fail(path,'missing style');
+      if(typeof font.dataUrl!=='string'||font.dataUrl.length>Math.ceil(MAX_FONT_BYTES*4/3)+80||!/^data:font\/(?:woff2?|ttf|otf);base64,[A-Za-z0-9+/]+={0,2}$/.test(font.dataUrl))fail(path+'.dataUrl','invalid or oversized embedded font');
+      else total+=font.dataUrl.length;
+    }if(total>Math.ceil(MAX_TOTAL_FONT_BYTES*4/3)+MAX_CAPTURED_FONTS*80)fail('fonts','total font budget exceeded');}
+  }
   const stack = [{ node: input.root, path: "root", depth: 0 }];
   const seen = new Set<unknown>();
   while (stack.length && errors.length < 20) {
@@ -40,6 +53,7 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
     enumeration(node.type, ["FRAME", "TEXT", "RECTANGLE", "IMAGE", "VECTOR", "LINE", "UNSUPPORTED"], `${path}.type`);
     if (!node.type) fail(path, "missing node type");
     enumeration(node.layoutPositioning, ["AUTO", "ABSOLUTE"], path + ".layoutPositioning");
+    if (node.zIndex !== undefined) number(node.zIndex, path + '.zIndex', -2147483648, 2147483647);
     if(node.sizing!==undefined){
       if(!object(node.sizing))fail(path+'.sizing','expected sizing object');
       else {
@@ -85,7 +99,7 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
       }
     }
     if (node.type === "TEXT") {
-      enumeration(node.textAutoResize, ['HEIGHT'], path + '.textAutoResize');
+      enumeration(node.textAutoResize, ['HEIGHT', 'WIDTH_AND_HEIGHT'], path + '.textAutoResize');
       if (typeof node.characters !== "string") fail(`${path}.characters`, "expected text");
       else textBytes += node.characters.length * 2;
       if (node.fragments !== undefined) {

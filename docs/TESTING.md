@@ -101,3 +101,7 @@ After building, run `node scripts/preview-capture-quality.mjs`. The two-origin C
 Run `node scripts/preview-paint-fidelity.mjs` for the Chromium capture/encoder fixture. Inspect soft borders, modern-colour shadows, SVG gradient/cutout geometry, input padding, checkbox state and backdrop blur. The report verifies decoded native data; the screenshot is source HTML, not Figma rendering. Reload the installed extension and source pages before making production comparisons at matched viewport sizes.
 
 Large-page measurements and stress checks (1.7.2): see [PERFORMANCE_1.7.2.md](PERFORMANCE_1.7.2.md). The quality lab's Run stress checks action covers scheduled capture cancellation, the 2,500-node limit, and eight repeated large exports. It does not exercise installed-popup responsiveness or make a leak-free guarantee.
+
+Responsive native export and cancellation (1.7.3): see [RESPONSIVENESS_1.7.3.md](RESPONSIVENESS_1.7.3.md). Stress checks now also abort native preparation before clipboard commit.
+
+Font matching (1.7.4): see [FONTS_1.7.4.md](FONTS_1.7.4.md). Use the quality server at /font-lab; add --font-cross-origin and open /font-lab-cross to exercise CORS-readable external stylesheets.

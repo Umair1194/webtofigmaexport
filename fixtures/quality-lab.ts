@@ -197,7 +197,7 @@ imagePng = canvas.toDataURL('image/png'); imageWebp = canvas.toDataURL('image/we
 stressButton.addEventListener('click',async()=>{
   const controls=[stressButton,runButton,copyButton,snapshotButton,scenarioSelect];
   controls.forEach(control=>control.disabled=true);
-  const report:any={schemaVersion:1,build:__QUALITY_BUILD__,generatedAt:new Date().toISOString(),viewport:viewport(),limitations:['Direct engine calls, not the installed popup or Chrome message broker.','Observed JS heap samples are not peak process memory or a proof of leak-free behavior.','Cancellation covers DOM capture; synchronous native encoding is not cancellable.']};
+  const report:any={schemaVersion:1,build:__QUALITY_BUILD__,generatedAt:new Date().toISOString(),viewport:viewport(),limitations:['Direct engine calls, not the installed popup or Chrome message broker.','Observed JS heap samples are not peak process memory or a proof of leak-free behavior.','Cancellation covers cooperative DOM capture and native preparation, before clipboard writing begins.']};
   try{
     if(document.visibilityState!=='visible')throw new Error('Keep this tab visible');
     await render('cards-large');
@@ -215,13 +215,23 @@ stressButton.addEventListener('click',async()=>{
     const limited=await capturePageAsync(fixture,{captureMode:'SELECTED_ELEMENT',maxNodes:2500});
     report.limit={capturedNodes:limited.diagnostics.totalNodesCaptured,partialWarning:limited.diagnostics.warnings.some(w=>/maximum node|partial/i.test(w)),sourceElements:fixture.querySelectorAll('*').length};
     if(report.limit.capturedNodes>2500||!report.limit.partialWarning)throw new Error('Capture limit not enforced or partial result not disclosed');
-    await render('cards-large');report.repeatedRuns=[];
+    await render('cards-large');
+    const exportDoc=await capturePageAsync(fixture,{captureMode:'SELECTED_ELEMENT',inferAutoLayout:true});await embedImages(exportDoc);
+    const exportController=new AbortController();let exportAbortAt=0;const exportStart=performance.now();
+    const exportTimer=setTimeout(()=>{exportAbortAt=performance.now();exportController.abort();},20);
+    let exportCancelled=false;
+    try{await buildNativeClipboard(exportDoc,{signal:exportController.signal});}
+    catch(error){if(error instanceof Error&&/cancelled/i.test(error.message))exportCancelled=true;else throw error;}
+    finally{clearTimeout(exportTimer);}
+    report.nativeCancellation={cancelled:exportCancelled,abortDelivered:exportAbortAt>0,totalMs:round(performance.now()-exportStart),responseAfterAbortMs:exportAbortAt?round(performance.now()-exportAbortAt):null};
+    if(!exportCancelled||!exportAbortAt)throw new Error('Native export did not stop on a scheduled abort');
+    report.repeatedRuns=[];
     for(let i=0;i<8;i++){
       status.textContent=`Stress: repeated large export ${i+1}/8…`;await pause(100);
       const sample=await measure('cards-large');report.repeatedRuns.push(sample);
     }
     if(report.repeatedRuns.some((sample:any)=>JSON.stringify(sample.counts)!==JSON.stringify(report.repeatedRuns[0].counts)))throw new Error('Repeated exports changed layer counts');
-    report.status='passed';status.textContent='Stress checks passed: capture cancellation, node limit and 8 repeated large exports. Review report for heap observations and remaining synchronous export pauses.';
+    report.status='passed';status.textContent='Stress checks passed: capture and export cancellation, node limit and 8 repeated large exports. Review report for heap observations and individual synchronous operations.';
   }catch(error){report.status='failed';report.error=error instanceof Error?error.message:String(error);status.textContent='Stress check failed: '+report.error;}
   finally{
     document.querySelector('#stress-report')!.textContent=JSON.stringify(report,null,2);document.documentElement.dataset.stressResult=report.status;

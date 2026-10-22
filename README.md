@@ -22,7 +22,7 @@ The regression suite covers capture bounds, element picking, cancellation, stora
 1. Open `chrome://extensions` in Chrome or the equivalent page in a Chromium browser.
 2. Enable Developer mode and choose **Load unpacked**.
 3. Select `apps/chrome-extension/dist`.
-4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.7.2 includes nested text styling, paragraph wrapping boxes, eligible content-driven sizing, oversized-corner normalization, clearer incomplete-capture recovery, and faster repeated text exports; take a fresh capture to get these fixes. Saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
+4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.7.5 includes sticky-layer stacking, scroll-pane clipping, single-line label sizing, nested text styling, paragraph wrapping boxes, eligible content-driven sizing, oversized-corner normalization, clearer incomplete-capture recovery, faster repeated text exports, cooperative cancellable export, and accessible web-font matching; take a fresh capture to get these fixes. Saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
 
 ## Optional legacy JSON importer
 
@@ -52,11 +52,14 @@ Text is editable and includes shaped glyph outlines so it can render on initial 
 
 There is no guarantee of pixel-perfect reproduction for arbitrary CSS. Transforms, complex generated content, advanced filters, embedded documents and some background/image behavior remain limited. Full page captures include currently loaded content; scroll first to load lazy sections. See [limitations](docs/LIMITATIONS.md).
 
-Processing is local and no telemetry or account backend is implemented. Remote image embedding makes network requests to asset hosts. Input values are redacted, but ordinary page text, titles and URLs can contain private information. The latest capture is stored locally until a successful native copy clears it. Failed copies remain available for retry; **Discard** clears them manually. See [privacy](docs/PRIVACY.md).
+Processing is local and no telemetry or account backend is implemented. Remote image and web-font embedding makes network requests to their original asset hosts. Input values are redacted, but ordinary page text, titles and URLs can contain private information. The latest capture is stored locally until a successful native copy clears it. Failed copies remain available for retry; **Discard** clears them manually. See [privacy](docs/PRIVACY.md).
 
 ## Audit and verification
 
 - [Screenshot fidelity review — 1.6.0](docs/SCREENSHOT_REVIEW_1.6.0.md)
+- [Sticky layers and single-line labels — 1.7.5](docs/STACKING_1.7.5.md)
+- [Web-font matching and Figma verification — 1.7.4](docs/FONTS_1.7.4.md)
+- [Responsive export and cancellation — 1.7.3](docs/RESPONSIVENESS_1.7.3.md)
 - [Performance audit — 1.7.2](docs/PERFORMANCE_1.7.2.md)
 - [Incomplete-capture recovery — 1.7.1](docs/QUALITY_1.7.1.md)
 - [Paragraph and resizing verification — 1.7.0](docs/QUALITY_1.7.0.md)

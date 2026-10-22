@@ -2,7 +2,13 @@
 
 The original audit is a historical snapshot. This document records the subsequent implementation and its limits.
 
-Latest release: [1.7.2 performance audit](PERFORMANCE_1.7.2.md): bounded text caches, large-page export measurements, cancellation and capture-limit stress checks, 209 passing tests. Includes [1.7.1 capture recovery](QUALITY_1.7.1.md) and the user-reported installed real-site success.
+Latest release: [1.7.5 stacking and label sizing](STACKING_1.7.5.md): sticky headers, scroll-pane clipping, non-wrapping labels, actual Figma paste verification and 238 passing tests.
+
+Previous release: [1.7.4 web-font matching](FONTS_1.7.4.md): accessible original font data, mixed styles, variable weights, explicit fallbacks, actual Figma editing checks and 234 passing tests.
+
+Previous release: [1.7.3 responsive export and cancellation](RESPONSIVENESS_1.7.3.md): cooperative encoding, popup and on-page cancellation, serializer equivalence checks, 222 passing tests.
+
+Previous release: [1.7.2 performance audit](PERFORMANCE_1.7.2.md): bounded text caches, large-page export measurements, cancellation and capture-limit stress checks, 209 passing tests. Includes [1.7.1 capture recovery](QUALITY_1.7.1.md) and the user-reported installed real-site success.
 
 Earlier follow-up: [1.7.0 paragraph and nested sizing verification](QUALITY_1.7.0.md), including actual Figma web edits and resizing, 181 passing tests and browser evidence at two widths.
 

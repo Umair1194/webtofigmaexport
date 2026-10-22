@@ -1,0 +1,489 @@
+{
+  "checkedAt": "2026-10-21T18:22:52.904Z",
+  "viewport": {
+    "width": 1100,
+    "height": 1000
+  },
+  "passed": true,
+  "checks": {
+    "threeFacesCaptured": true,
+    "headingFamily": true,
+    "headingBold": true,
+    "paragraphOneLayer": true,
+    "mixedMonoFamily": true,
+    "italicStyle": true,
+    "variableFamily": true,
+    "variableWeight": true,
+    "drawable": true,
+    "fallbackWarned": true,
+    "noAvailableFontSubstitution": true
+  },
+  "elapsedMs": 88.79999999701977,
+  "fontAssets": [
+    {
+      "family": "Lora",
+      "weightMin": 400,
+      "weightMax": 700,
+      "style": "normal",
+      "encodedBytes": 282949
+    },
+    {
+      "family": "Lora",
+      "weightMin": 400,
+      "weightMax": 700,
+      "style": "italic",
+      "encodedBytes": 294997
+    },
+    {
+      "family": "Code alias",
+      "weightMin": 100,
+      "weightMax": 700,
+      "style": "normal",
+      "encodedBytes": 244957
+    }
+  ],
+  "stats": {
+    "layers": 10,
+    "text": 4,
+    "autoLayout": 6
+  },
+  "warnings": [
+    "Web font unavailable for export: unavailable example. Native copy will report any substitution.",
+    "Preserved web font Lora. Make it available in Figma to edit without font substitution.",
+    "Preserved web font Roboto Mono. Make it available in Figma to edit without font substitution.",
+    "Substituted Unavailable example 400 with Inter: matching web-font data was unavailable, unsupported, or missing required glyphs. Wrapping may differ after editing."
+  ],
+  "texts": [
+    {
+      "name": "Preserve the origina...",
+      "characters": "Preserve the original type.",
+      "fontName": {
+        "family": "Lora",
+        "style": "Bold",
+        "postscript": ""
+      },
+      "fontVariations": [
+        {
+          "axisTag": 2003265652,
+          "axisName": "wght",
+          "value": 700
+        }
+      ],
+      "size": {
+        "x": 710,
+        "y": 40.796875
+      },
+      "baselines": [
+        {
+          "position": {
+            "x": 0,
+            "y": 32.694000244140625
+          },
+          "width": 430.921875,
+          "lineY": -0.15000000596046448,
+          "lineHeight": 40.79999923706055,
+          "lineAscent": 34.20399856567383,
+          "firstCharacter": 0,
+          "endCharacter": 27
+        }
+      ],
+      "overrides": [
+        {
+          "styleID": 1,
+          "fontSize": 34,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 40.79999923706055,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Lora",
+            "style": "Bold",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 700
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Paragraph",
+      "characters": "This paragraph uses Lora, with bold words, italic words, and editable code in a different family. It should remain one paragraph with the original line wrapping and visible glyphs.",
+      "fontName": {
+        "family": "Lora",
+        "style": "Regular",
+        "postscript": ""
+      },
+      "fontVariations": [
+        {
+          "axisTag": 2003265652,
+          "axisName": "wght",
+          "value": 400
+        }
+      ],
+      "size": {
+        "x": 710,
+        "y": 91.1953125
+      },
+      "baselines": [
+        {
+          "position": {
+            "x": 0,
+            "y": 21.95400047302246
+          },
+          "width": 695.75,
+          "lineY": -0.20000000298023224,
+          "lineHeight": 30.399999618530273,
+          "lineAscent": 19.11400032043457,
+          "firstCharacter": 0,
+          "endCharacter": 79
+        },
+        {
+          "position": {
+            "x": 0,
+            "y": 52.35243606567383
+          },
+          "width": 699.015625,
+          "lineY": 30.198436737060547,
+          "lineHeight": 30.399999618530273,
+          "lineAscent": 19.11400032043457,
+          "firstCharacter": 80,
+          "endCharacter": 160
+        },
+        {
+          "position": {
+            "x": 0,
+            "y": 82.7508773803711
+          },
+          "width": 160.5546875,
+          "lineY": 60.59687423706055,
+          "lineHeight": 30.399999618530273,
+          "lineAscent": 19.11400032043457,
+          "firstCharacter": 161,
+          "endCharacter": 180
+        }
+      ],
+      "overrides": [
+        {
+          "styleID": 1,
+          "fontSize": 19,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 30.399999618530273,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Lora",
+            "style": "Regular",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 400
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        },
+        {
+          "styleID": 2,
+          "fontSize": 19,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 30.399999618530273,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Lora",
+            "style": "Bold",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 700
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        },
+        {
+          "styleID": 3,
+          "fontSize": 19,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 30.399999618530273,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Lora",
+            "style": "Italic",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 400
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        },
+        {
+          "styleID": 4,
+          "fontSize": 16,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 25.600000381469727,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Roboto Mono",
+            "style": "Regular",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 400
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Variable weight 650:...",
+      "characters": "Variable weight 650: 0123456789",
+      "fontName": {
+        "family": "Roboto Mono",
+        "style": "Bold",
+        "postscript": ""
+      },
+      "fontVariations": [
+        {
+          "axisTag": 2003265652,
+          "axisName": "wght",
+          "value": 650
+        }
+      ],
+      "size": {
+        "x": 710,
+        "y": 27
+      },
+      "baselines": [
+        {
+          "position": {
+            "x": 0,
+            "y": 20.49169921875
+          },
+          "width": 334.859375,
+          "lineY": 0,
+          "lineHeight": 27,
+          "lineAscent": 18.861328125,
+          "firstCharacter": 0,
+          "endCharacter": 31
+        }
+      ],
+      "overrides": [
+        {
+          "styleID": 1,
+          "fontSize": 18,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 27,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Roboto Mono",
+            "style": "Bold",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fontVariations": [
+            {
+              "axisTag": 2003265652,
+              "axisName": "wght",
+              "value": 650
+            }
+          ],
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "An unavailable famil...",
+      "characters": "An unavailable family must have an explicit fallback warning.",
+      "fontName": {
+        "family": "Inter",
+        "style": "Regular",
+        "postscript": ""
+      },
+      "size": {
+        "x": 710,
+        "y": 25.5
+      },
+      "baselines": [
+        {
+          "position": {
+            "x": 0,
+            "y": 18.93408203125
+          },
+          "width": 455.4609375,
+          "lineY": 0,
+          "lineHeight": 25.5,
+          "lineAscent": 16.46875,
+          "firstCharacter": 0,
+          "endCharacter": 61
+        }
+      ],
+      "overrides": [
+        {
+          "styleID": 1,
+          "fontSize": 17,
+          "textDecoration": "NONE",
+          "lineHeight": {
+            "value": 25.5,
+            "units": "PIXELS"
+          },
+          "fontName": {
+            "family": "Inter",
+            "style": "Regular",
+            "postscript": ""
+          },
+          "letterSpacing": {
+            "value": 0,
+            "units": "PIXELS"
+          },
+          "fillPaints": [
+            {
+              "type": "SOLID",
+              "color": {
+                "r": 0.13333334028720856,
+                "g": 0.13333334028720856,
+                "b": 0.13333334028720856,
+                "a": 1
+              },
+              "opacity": 1,
+              "visible": true,
+              "blendMode": "NORMAL"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Engine harness, not installed Chrome messaging or Figma-host rendering.",
+    "Original font data shapes glyphs but is not installed in Figma by clipboard paste."
+  ]
+}

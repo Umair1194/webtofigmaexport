@@ -159,7 +159,7 @@ export interface TextFragment {
 export interface TextNode extends BaseNode {
   type: "TEXT";
   /** Captured block content box supports native reflow; absent on legacy/positioned text. */
-  textAutoResize?: "HEIGHT";
+  textAutoResize?: "HEIGHT" | "WIDTH_AND_HEIGHT";
   characters: string;
   fragments?: TextFragment[];
   runs?: {start:number;end:number;style:TypographyStyle;fills:Paint[]}[];
@@ -238,6 +238,16 @@ export interface CaptureDiagnostics {
   durationMs: number;
 }
 
+export const MAX_CAPTURED_FONTS = 12;
+export const MAX_FONT_BYTES = 256 * 1024;
+export const MAX_TOTAL_FONT_BYTES = 1024 * 1024;
+export interface CapturedFont {
+  family: string;
+  weightMin: number;
+  weightMax: number;
+  style: 'normal' | 'italic';
+  dataUrl: string;
+}
 export interface SceneGraphDocument {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
@@ -248,4 +258,5 @@ export interface SceneGraphDocument {
   viewport: ViewportMeta;
   root: FrameNode;
   diagnostics: CaptureDiagnostics;
+  fonts?: CapturedFont[];
 }

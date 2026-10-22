@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "build": {
+    "revision": "088fb0c29f13f4467bc93b71bb54563720ed459a",
+    "extensionVersion": "1.7.2"
+  },
+  "generatedAt": "2026-10-21T18:04:33.158Z",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "devicePixelRatio": 1
+  },
+  "limitations": [
+    "Direct engine calls, not the installed popup or Chrome message broker.",
+    "Observed JS heap samples are not peak process memory or a proof of leak-free behavior.",
+    "Cancellation covers cooperative DOM capture and native preparation, before clipboard writing begins."
+  ],
+  "cancellation": {
+    "cancelled": true,
+    "abortDelivered": true,
+    "totalMs": 11.1,
+    "responseAfterAbortMs": 1.1
+  },
+  "limit": {
+    "capturedNodes": 2500,
+    "partialWarning": true,
+    "sourceElements": 6302
+  },
+  "nativeCancellation": {
+    "cancelled": true,
+    "abortDelivered": true,
+    "totalMs": 35.8,
+    "responseAfterAbortMs": 0
+  },
+  "repeatedRuns": [
+    {
+      "captureMs": 33.1000000089407,
+      "assetsMs": 0,
+      "encodeMs": 196.29999999701977,
+      "decodeMs": 16.599999994039536,
+      "totalMs": 246,
+      "maxFrameGapMs": 50,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 29345505,
+      "heapEndBytes": 34314895,
+      "maxObservedHeapBytes": 61818752,
+      "clipboardBytes": 109376,
+      "captureJsonBytes": 7361730,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 35,
+      "assetsMs": 0.10000000894069672,
+      "encodeMs": 202.3999999910593,
+      "decodeMs": 13,
+      "totalMs": 250.5,
+      "maxFrameGapMs": 50,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 45297426,
+      "heapEndBytes": 70893516,
+      "maxObservedHeapBytes": 80570207,
+      "clipboardBytes": 109376,
+      "captureJsonBytes": 7361730,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 37,
+      "assetsMs": 0.20000000298023224,
+      "encodeMs": 199.20000000298023,
+      "decodeMs": 11.700000002980232,
+      "totalMs": 248.1000000089407,
+      "maxFrameGapMs": 50,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 85798306,
+      "heapEndBytes": 83850223,
+      "maxObservedHeapBytes": 96352267,
+      "clipboardBytes": 109376,
+      "captureJsonBytes": 7361731,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 34.6000000089407,
+      "assetsMs": 0,
+      "encodeMs": 191.29999999701977,
+      "decodeMs": 11.5,
+      "totalMs": 237.40000000596046,
+      "maxFrameGapMs": 49.89999999999418,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 88374633,
+      "heapEndBytes": 63066706,
+      "maxObservedHeapBytes": 116525226,
+      "clipboardBytes": 109376,
+      "captureJsonBytes": 7361731,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 36.5,
+      "assetsMs": 0.10000000894069672,
+      "encodeMs": 190.20000000298023,
+      "decodeMs": 12,
+      "totalMs": 238.80000001192093,
+      "maxFrameGapMs": 41.599999999998545,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 45507827,
+      "heapEndBytes": 67942709,
+      "maxObservedHeapBytes": 75766842,
+      "clipboardBytes": 109372,
+      "captureJsonBytes": 7361730,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 38.20000000298023,
+      "assetsMs": 0.10000000894069672,
+      "encodeMs": 188,
+      "decodeMs": 11.299999997019768,
+      "totalMs": 237.6000000089407,
+      "maxFrameGapMs": 41.799999999995634,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 82844007,
+      "heapEndBytes": 102240678,
+      "maxObservedHeapBytes": 102240678,
+      "clipboardBytes": 109376,
+      "captureJsonBytes": 7361730,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 31.399999991059303,
+      "assetsMs": 0.10000000894069672,
+      "encodeMs": 183.69999998807907,
+      "decodeMs": 12.200000002980232,
+      "totalMs": 227.3999999910593,
+      "maxFrameGapMs": 41.80000000000291,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 117141968,
+      "heapEndBytes": 96192818,
+      "maxObservedHeapBytes": 125256545,
+      "clipboardBytes": 109372,
+      "captureJsonBytes": 7361731,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    },
+    {
+      "captureMs": 38.8999999910593,
+      "assetsMs": 0.10000000894069672,
+      "encodeMs": 184.59999999403954,
+      "decodeMs": 11.299999997019768,
+      "totalMs": 234.8999999910593,
+      "maxFrameGapMs": 41.400000000001455,
+      "longTaskMaxMs": 0,
+      "longTasksSupported": true,
+      "heapStartBytes": 111094113,
+      "heapEndBytes": 70637965,
+      "maxObservedHeapBytes": 124465375,
+      "clipboardBytes": 109372,
+      "captureJsonBytes": 7361731,
+      "counts": {
+        "layers": 1405,
+        "text": 451,
+        "autoLayout": 804,
+        "sourceElements": 902,
+        "capturedNodes": 1355,
+        "imagePaints": 150
+      },
+      "checks": {},
+      "observations": {},
+      "warnings": []
+    }
+  ],
+  "status": "passed"
+}

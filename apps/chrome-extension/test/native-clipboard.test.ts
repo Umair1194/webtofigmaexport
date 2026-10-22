@@ -10,6 +10,22 @@ const text={...base,bounds:{x:10,y:10,width:100,height:20},id:'text',type:'TEXT'
 beforeEach(()=>{vi.stubGlobal('DOMParser',new Window().DOMParser);});
 afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
 describe('Native Figma clipboard',()=>{
+  it('paints sticky headers above scrolling content while preserving flow order',async()=>{
+    const frame=(id:string,y:number,position='AUTO',zIndex?:number)=>({...base,id,name:id,type:'FRAME',bounds:{x:0,y,width:300,height:30},layoutPositioning:position,zIndex,fills:[],children:[]});
+    const capture=doc([frame('sticky',0,'ABSOLUTE',30),frame('first',10),frame('second',60),frame('behind',0,'ABSOLUTE',-1)]);
+    const parsed=(await parseFigmaClipboard((await buildNativeClipboard(capture)).html))!;
+    const layers=parsed.nodes.filter(n=>['sticky','first','second','behind'].includes(n.name!));
+    expect(layers.map(n=>n.name)).toEqual(['behind','first','second','sticky']);
+    expect(layers.find(n=>n.name==='sticky')!.stackPositioning).toBe('ABSOLUTE');
+    expect(layers.filter(n=>['first','second'].includes(n.name!)).every(n=>n.stackPositioning!=='ABSOLUTE')).toBe(true);
+  });
+  it('exports nowrap labels as native auto-width text instead of a wrapping fixed-width box',async()=>{
+    const capture=doc([{...text,characters:'Editorial accent',textAutoResize:'WIDTH_AND_HEIGHT',bounds:{x:10,y:10,width:97.39,height:15.5}}]);
+    capture.root.autoLayout={layoutMode:'VERTICAL',itemSpacing:0,paddingTop:10,paddingLeft:10,paddingBottom:0,paddingRight:0,counterAxisAlignItems:'MIN'};
+    const parsed=(await parseFigmaClipboard((await buildNativeClipboard(capture)).html))!;
+    expect(parsed.nodes.find(n=>n.type==='TEXT')!.textAutoResize).toBe('WIDTH_AND_HEIGHT');
+    expect(parsed.nodes.find(n=>n.type==='TEXT')!.stackChildAlignSelf).not.toBe('STRETCH');
+  });
   it('encodes a hierarchy of editable frames and real text in a Figma binary HTML payload',async()=>{
     const output=await buildNativeClipboard(doc([text]));
     expect(output.html).toContain('data-buffer="<!--(figma)');expect(output.html).not.toContain('schemaVersion');
@@ -214,4 +230,15 @@ it('retains backdrop-blur effect data and one region with both even-odd contours
  const {vectorNetwork}=await import('../src/clipboard/vector-geometry.js');
  const network=vectorNetwork([{type:'M',x:0,y:0},{type:'L',x:20,y:0},{type:'L',x:20,y:-20},{type:'Z'},{type:'M',x:5,y:-5},{type:'L',x:15,y:-5},{type:'L',x:15,y:-15},{type:'Z'}],true,'EVENODD');
  expect(network.regions).toHaveLength(1);expect(network.regions[0].loops).toHaveLength(2);expect(network.regions[0].windingRule).toBe('EVENODD');
+});
+it('stops an export cancelled during glyph serialization without writing the clipboard',async()=>{
+ const write=vi.fn();vi.stubGlobal('navigator',{clipboard:{write}});
+ const controller=new AbortController();let shaped=0;
+ const original=textRuntime.createTextRuntime;
+ vi.spyOn(textRuntime,'createTextRuntime').mockImplementation((...args)=>{
+  const runtime=original(...args);return {...runtime,shapeText(node){if(++shaped===1)setTimeout(()=>controller.abort(),0);return runtime.shapeText(node);}};
+ });
+ const capture=doc(Array.from({length:250},(_,i)=>({...text,id:'text-'+i,bounds:{...text.bounds,y:i*24},characters:'An editable text label '+i})));
+ await expect(copyNativeCapture(capture,{signal:controller.signal})).rejects.toThrow('Export cancelled');
+ expect(shaped).toBeGreaterThan(0);expect(shaped).toBeLessThan(250);expect(write).not.toHaveBeenCalled();
 });

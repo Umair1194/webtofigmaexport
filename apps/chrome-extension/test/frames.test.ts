@@ -59,3 +59,11 @@ it('accepts an embedded scene containing a normalized Chromium-sized fully round
   expect(main.root.children[0].children[0].cornerRadius.topLeft).toBeCloseTo(100);
   expect(main.diagnostics.warnings).toEqual([]);
 });
+it('retains embedded web fonts when composing an editable preview',async()=>{
+ const main=document(),embedded=document(),key='fframe-12345678-1234-1234-1234-123456789012';
+ const font={family:'Lora',weightMin:400,weightMax:700,style:'normal',dataUrl:'data:font/ttf;base64,AQID'};embedded.fonts=[font];
+ main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1,attributes:{frameKey:key}}];
+ vi.stubGlobal('chrome',{runtime:{sendMessage:vi.fn(async()=>({status:'ok',document:embedded}))}});
+ await captureEmbeddedFrames(main,new Map([[key,{contentWindow:{postMessage:vi.fn()}} as any]]),new AbortController().signal,0);
+ expect(main.fonts).toEqual([font]);expect(main.root.children[0].type).toBe('FRAME');
+});

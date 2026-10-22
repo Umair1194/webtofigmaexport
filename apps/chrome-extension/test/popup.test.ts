@@ -33,7 +33,7 @@ async function setup({saved=null as any,injected=true,initialGet=undefined as an
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 it.each([true,false])('captures, copies, clears saved data and closes (already injected: %s)',async(injected)=>{
   const ui=await setup({injected});ui.click('btn-run-capture');await settle();
-  expect(nativeCopy).toHaveBeenCalledWith(expect.objectContaining({id:'capture-1'}));
+  expect(nativeCopy).toHaveBeenCalledWith(expect.objectContaining({id:'capture-1'}),expect.objectContaining({signal:expect.any(AbortSignal),onClipboardWrite:expect.any(Function)}));
   expect(ui.send).toHaveBeenCalledWith(10,expect.objectContaining({type:'EXECUTE_CAPTURE',payload:expect.objectContaining({captureMode:'VIEWPORT',autoCopy:false,requestId:expect.any(String)})}),{frameId:0});
   expect(ui.runtimeSend).toHaveBeenCalledWith({type:'CLEAR_SAVED_CAPTURE',captureId:'capture-1'});expect(ui.state.saved).toBeNull();
   expect(ui.win.document.getElementById('copy-success')!.hidden).toBe(false);
@@ -119,4 +119,20 @@ it('provides a direct retry for a saved incomplete capture and replaces it after
   expect(ui.send).toHaveBeenCalledWith(10,expect.objectContaining({type:'EXECUTE_CAPTURE'}),{frameId:0});
   expect(nativeCopy).toHaveBeenCalledOnce();expect(ui.state.saved).toBeNull();
   expect(ui.win.document.getElementById('copy-success')!.hidden).toBe(false);
+});
+it('cancels pending native preparation without deleting the saved capture and allows retry',async()=>{
+ const ui=await setup({saved:documentCapture()});
+ nativeCopy.mockImplementation((_doc:any,options:any)=>new Promise((_resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('Export cancelled. Your capture is still saved.')))));
+ ui.click('btn-copy-figma');await settle();expect(ui.win.document.getElementById('btn-cancel-capture')!.hidden).toBe(false);
+ ui.click('btn-cancel-capture');await settle();
+ expect(ui.state.saved).not.toBeNull();expect(ui.runtimeSend).not.toHaveBeenCalled();
+ expect(ui.win.document.getElementById('notice-banner')!.textContent).toContain('Export cancelled');
+ expect((ui.win.document.getElementById('btn-copy-figma') as any).disabled).toBe(false);
+ nativeCopy.mockResolvedValue(exported);ui.click('btn-copy-figma');await settle();expect(ui.state.saved).toBeNull();
+});
+it('stops offering cancellation once the clipboard write has begun',async()=>{
+ const ui=await setup({saved:documentCapture()});let finish!:(value:any)=>void;let signal:AbortSignal;
+ nativeCopy.mockImplementation((_doc:any,options:any)=>{signal=options.signal;options.onClipboardWrite();return new Promise(resolve=>{finish=resolve;});});
+ ui.click('btn-copy-figma');await settle();expect(ui.win.document.getElementById('btn-cancel-capture')!.hidden).toBe(true);
+ ui.click('btn-cancel-capture');expect(signal!.aborted).toBe(false);finish(exported);await settle();expect(ui.state.saved).toBeNull();
 });

@@ -1,5 +1,5 @@
 import { notifyRuntime } from "./runtime.js";
-import { FrameNode, SceneGraphDocument, SceneNode, validateSceneGraph } from "@frameforge/scene-graph";
+import { MAX_CAPTURED_FONTS, MAX_TOTAL_FONT_BYTES, FrameNode, SceneGraphDocument, SceneNode, validateSceneGraph } from "@frameforge/scene-graph";
 
 export function collectFrames(target: Element) {
   const keys = new WeakMap<Element, string>();
@@ -86,6 +86,13 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
       while (rename.length) { const node = rename.pop()!; node.id = token + ":" + node.id; if (node.type === "FRAME") rename.push(...node.children); }
       embedded.root.bounds.x = 0; embedded.root.bounds.y = 0;
       slot.parent.children[slot.index] = { ...slot.node, type: "FRAME", name: "Embedded preview", clipsContent: true, fills: [], children: [embedded.root] } as FrameNode;
+      if(embedded.fonts?.length){
+        doc.fonts??=[];
+        for(const font of embedded.fonts)if(!doc.fonts.some(existing=>existing.family===font.family&&existing.weightMin===font.weightMin&&existing.weightMax===font.weightMax&&existing.style===font.style&&existing.dataUrl===font.dataUrl)){
+          if(doc.fonts.length>=MAX_CAPTURED_FONTS||doc.fonts.reduce((size,item)=>size+Math.ceil(item.dataUrl.length*3/4),0)+Math.ceil(font.dataUrl.length*3/4)>MAX_TOTAL_FONT_BYTES){warn('Embedded web-font budget reached; some fonts may use an explicit fallback.');continue;}
+          doc.fonts.push(font);
+        }
+      }
       doc.diagnostics.totalNodesCaptured += embedded.diagnostics.totalNodesCaptured;
       doc.diagnostics.totalTextNodes += embedded.diagnostics.totalTextNodes;
       doc.diagnostics.totalImages += embedded.diagnostics.totalImages;

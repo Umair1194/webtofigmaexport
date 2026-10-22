@@ -16,6 +16,23 @@ beforeEach(() => {
 });
 function child(tag = "div") { const el=win.document.createElement(tag); geometry(el,20,-100,200,50); win.document.body.append(el); return el; }
 describe("DOM capture integration", () => {
+  it('retains sticky stacking priority and clips scrollable panes',()=>{
+    const panel=child();panel.style.cssText='overflow-y:auto';
+    const sticky=win.document.createElement('header');sticky.style.cssText='position:sticky;top:0;z-index:30';geometry(sticky,20,0,200,30);panel.append(sticky);
+    const output:any=capturePage(panel as any,{captureMode:'SELECTED_ELEMENT'}).root.children[0];
+    expect(output.clipsContent).toBe(true);
+    expect(output.children[0]).toMatchObject({layoutPositioning:'ABSOLUTE',zIndex:30});
+    const normalized:any=validateSceneGraph(capturePage(panel as any,{captureMode:'SELECTED_ELEMENT'})).document;
+    expect(normalized.root.children[0].children[0].zIndex).toBe(30);
+  });
+  it('keeps nowrap labels width-hugging while ordinary paragraphs remain height-resizing',()=>{
+    const badge=child('span');badge.style.cssText='display:inline-flex;white-space:nowrap';badge.textContent='Editorial accent';
+    const output:any=capturePage(badge as any,{captureMode:'SELECTED_ELEMENT'}).root.children[0];
+    expect(output.children[0].textAutoResize).toBe('WIDTH_AND_HEIGHT');
+    const paragraph=child('p');paragraph.textContent='A normal paragraph that may wrap.';
+    const wrapped:any=capturePage(paragraph as any,{captureMode:'SELECTED_ELEMENT'}).root.children[0];
+    expect(wrapped.children[0].textAutoResize).toBe('HEIGHT');
+  });
   it("normalizes viewport and full-page root bounds at nonzero scroll", () => {
     child();
     const viewport=capturePage(win.document.body as any,{captureMode:"VIEWPORT"});

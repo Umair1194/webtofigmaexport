@@ -1,3 +1,4 @@
+import {captureFonts,waitForFonts} from './fonts.js';
 import { notifyRuntime } from "./runtime.js";
 import { saveCapture, clearSavedCapture } from "../capture-store.js";
 import { copyCaptureInPage } from "../clipboard/client.js";
@@ -74,13 +75,17 @@ if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
     const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
     if (!embedded) showPanel("Capturing editable layers…", [{ label: "Cancel", run: () => controller.abort() }]);
     try {
+      reportStage('Waiting for web fonts…');
+      const fontsReady=await waitForFonts(controller.signal);
       reportStage('Reading page…');
       const frameInfo = collectFrames(target);
       const doc = await capturePageAsync(target, { ...options, frameKeys: frameInfo.keys, signal: controller.signal, inferAutoLayout: true, redactForms: true });
+      if(!fontsReady)doc.diagnostics.warnings.push('Web fonts were still loading when captured. Recapture after the page settles for reliable wrapping.');
       await captureEmbeddedFrames(doc, frameInfo.frames, controller.signal, options.frameDepth || 0, options.maxNodes || 2500);
       if (!embedded) showPanel("Embedding images…", [{ label: "Cancel", run: () => controller.abort() }]);
       reportStage('Adding images…');
       await inlineAssets(doc, controller.signal);
+      reportStage('Matching web fonts…');await captureFonts(doc,controller.signal);
       if (controller.signal.aborted) throw new Error(timedOut ? "Capture timed out after 30 seconds. Select a smaller section." : "Capture cancelled.");
       doc.diagnostics.durationMs = Math.round(performance.now() - started);
       // Chrome storage quota is measured in bytes, not JS UTF-16 characters.
@@ -90,7 +95,8 @@ if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
         lastCaptureId = doc.id;
         const copy = async () => {
           try {
-            await copyCaptureInPage(doc); copied = true;
+            showPanel("Preparing editable layers…", [{ label: "Cancel", run: () => controller.abort() }]);
+            await copyCaptureInPage(doc,controller.signal); copied = true;
             try { await clearSavedCapture(doc.id); }
             catch { showPanel('Copied to Figma. The saved capture could not be cleared; open the extension to discard it.'); return; }
             panel?.remove(); panel = null;

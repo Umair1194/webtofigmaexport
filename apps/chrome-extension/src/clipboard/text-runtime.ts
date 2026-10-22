@@ -31,7 +31,8 @@ function outline(glyph: Glyph, scale: number): OutlineCommand[] {
 }
 
 /** Shape real glyphs on TEXT nodes, without flattening them into VECTOR layers. */
-export function createTextRuntime(warnings: Set<string>, measured = new Map<string, TextFragment[]>()): FigNodeChangeExportRuntime {
+export function createTextRuntime(warnings: Set<string>, measured = new Map<string, TextFragment[]>(), resolveFace?: (node: SceneNode) => Font | undefined): FigNodeChangeExportRuntime {
+  const fontFor=(node:SceneNode)=>resolveFace?.(node)??face(node);
   // Cache only within this export. Bound text and outline retention on large/unique pages.
   const layouts = new Map<Font, Map<string, ReturnType<Font['layout']>>>();
   const outlines = new WeakMap<Glyph, Map<number, OutlineCommand[]>>();
@@ -59,11 +60,11 @@ export function createTextRuntime(warnings: Set<string>, measured = new Map<stri
   };
   return {
     shapeText(node): ShapedText {
-      const font = face(node), scale = node.fontSize / font.unitsPerEm;
+      const font = fontFor(node), scale = node.fontSize / font.unitsPerEm;
       const lineHeight = node.lineHeight ?? (font.ascent - font.descent + font.lineGap) * scale;
       const text = node.textCase === 'UPPER' ? node.text.toUpperCase() : node.textCase === 'LOWER' ? node.text.toLowerCase() : node.textCase === 'TITLE' ? node.text.replace(/\b\p{L}/gu, c => c.toUpperCase()) : node.text;
       const widthOf = (value: string, current=node) => {
-        const f=face(current),sc=current.fontSize/f.unitsPerEm, run = layout(f, value);
+        const f=fontFor(current),sc=current.fontSize/f.unitsPerEm, run = layout(f, value);
         return run.advanceWidth * sc + Math.max(0, run.glyphs.length - 1) * current.letterSpacing;
       };
       // Line records keep UTF-16 character offsets, including spaces and explicit newlines.
@@ -92,26 +93,38 @@ export function createTextRuntime(warnings: Set<string>, measured = new Map<stri
       const glyphs: ShapedText['glyphs'] = [], baselines: ShapedText['baselines'] = [];
       const offsets = new Array<number>(node.text.length).fill(0);
       lines.forEach((line, lineIndex) => {
-        const styled={...node,...node.styleRuns.find(run=>line.start>=run.start&&line.start<run.start+run.length)?.style};
-        const font=face(styled),scale=styled.fontSize/font.unitsPerEm,ascent=font.ascent*scale;
-        const lineHeight=styled.lineHeight??(font.ascent-font.descent+font.lineGap)*scale;
-        const run = layout(font, line.text), width = widthOf(line.text,styled);
-        const horizontalScale = line.bounds ? (width > 0 ? line.bounds.width / width : 1) : Math.min(1, node.width / (width || 1));
-        const drawnWidth = width * horizontalScale;
-        let x = line.bounds?.x ?? (node.textAlignHorizontal === 'CENTER' ? (node.width - drawnWidth) / 2 : node.textAlignHorizontal === 'RIGHT' ? node.width - drawnWidth : 0);
-        const baselineY = line.bounds ? line.bounds.y + (line.bounds.height - (font.ascent - font.descent) * scale) / 2 + ascent : firstBaseline + lineIndex * lineHeight;
-        const left = x;
-        let character = line.start;
-        run.glyphs.forEach((glyph, index) => {
-          const p = run.positions[index], advance = (p.xAdvance * scale + (index < run.glyphs.length - 1 ? styled.letterSpacing : 0)) * horizontalScale;
-          const charLength = Math.max(1, glyph.codePoints.reduce((n, cp) => n + (cp > 0xffff ? 2 : 1), 0));
-          if (glyph.id === 0) warnings.add('Some characters are unavailable in the bundled font: ' + node.name);
-          const commands = glyphOutline(glyph, scale).map(command => ({ ...command, ...(command.x === undefined ? {} : { x: command.x * horizontalScale }), ...(command.x1 === undefined ? {} : { x1: command.x1 * horizontalScale }), ...(command.x2 === undefined ? {} : { x2: command.x2 * horizontalScale }) }));
-          glyphs.push({ commands, x: x + p.xOffset * scale * horizontalScale, y: baselineY - p.yOffset * scale, fontSize: styled.fontSize, firstCharacter: character, advance });
-          for (let j = 0; j < charLength && character + j < offsets.length; j++) offsets[character + j] = x - left;
-          character += charLength; x += advance;
+        const end=line.start+line.text.length;
+        const boundaries=[...new Set([line.start,end,...node.styleRuns.flatMap(run=>[run.start,run.start+run.length]).filter(value=>value>line.start&&value<end)])].sort((a,b)=>a-b);
+        const segments=boundaries.slice(0,-1).map((start,index)=>{
+          const styled={...node,...node.styleRuns.find(run=>start>=run.start&&start<run.start+run.length)?.style};
+          const font=fontFor(styled),scale=styled.fontSize/font.unitsPerEm;
+          const value=text.slice(start,boundaries[index+1]);
+          return {start,styled,font,scale,run:layout(font,value),width:widthOf(value,styled)};
         });
-        baselines.push({ firstCharacter: line.start, endCharacter: line.start + line.text.length, position: { x: left, y: baselineY }, width: drawnWidth, lineY: line.bounds ? line.bounds.y + (line.bounds.height - lineHeight) / 2 : top + lineIndex * lineHeight, lineHeight, lineAscent: ascent });
+        const width=segments.reduce((sum,segment)=>sum+segment.width,0);
+        const horizontalScale=line.bounds?(width>0?line.bounds.width/width:1):Math.min(1,node.width/(width||1));
+        const drawnWidth=width*horizontalScale;
+        let x=line.bounds?.x??(node.textAlignHorizontal==='CENTER'?(node.width-drawnWidth)/2:node.textAlignHorizontal==='RIGHT'?node.width-drawnWidth:0);
+        const left=x;
+        let baselineY=firstBaseline+lineIndex*lineHeight;
+        let actualLineHeight=lineHeight,actualAscent=ascent;
+        for(const segment of segments){
+          const {styled,font,scale,run}=segment,ascent=font.ascent*scale;
+          const segmentHeight=styled.lineHeight??(font.ascent-font.descent+font.lineGap)*scale;
+          const y=line.bounds?line.bounds.y+(line.bounds.height-(font.ascent-font.descent)*scale)/2+ascent:baselineY;
+          baselineY=y;actualLineHeight=Math.max(actualLineHeight,segmentHeight);actualAscent=Math.max(actualAscent,ascent);
+          let character=segment.start;
+          run.glyphs.forEach((glyph,index)=>{
+            const p=run.positions[index],advance=(p.xAdvance*scale+(index<run.glyphs.length-1?styled.letterSpacing:0))*horizontalScale;
+            const charLength=Math.max(1,glyph.codePoints.reduce((n,cp)=>n+(cp>0xffff?2:1),0));
+            if(glyph.id===0)warnings.add('Some characters are unavailable in the selected export font: '+node.name);
+            const commands=glyphOutline(glyph,scale).map(command=>({...command,...(command.x===undefined?{}:{x:command.x*horizontalScale}),...(command.x1===undefined?{}:{x1:command.x1*horizontalScale}),...(command.x2===undefined?{}:{x2:command.x2*horizontalScale})}));
+            glyphs.push({commands,x:x+p.xOffset*scale*horizontalScale,y:y-p.yOffset*scale,fontSize:styled.fontSize,firstCharacter:character,advance});
+            for(let j=0;j<charLength&&character+j<offsets.length;j++)offsets[character+j]=x-left;
+            character+=charLength;x+=advance;
+          });
+        }
+        baselines.push({firstCharacter:line.start,endCharacter:end,position:{x:left,y:baselineY},width:drawnWidth,lineY:line.bounds?line.bounds.y+(line.bounds.height-actualLineHeight)/2:top+lineIndex*lineHeight,lineHeight:actualLineHeight,lineAscent:actualAscent});
       });
       // Several styled fragments can share one browser line inside a single paragraph layer.
       const merged:ShapedText['baselines']=[];

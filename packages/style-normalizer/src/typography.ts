@@ -23,9 +23,9 @@ export function normalizeFontWeight(rawWeight: string): number {
   if (lower === "bolder") return 800;
   if (lower === "lighter") return 300;
 
-  const num = parseInt(lower, 10);
+  const num = Number(lower);
   if (!Number.isNaN(num) && num >= 100 && num <= 900) {
-    return Math.round(num / 100) * 100;
+    return num;
   }
   return 400;
 }
@@ -35,7 +35,7 @@ export function parseTypography(
 ): TypographyStyle {
   const fontFamily = normalizeFontFamily(computedStyle.fontFamily || "");
   const fontWeight = normalizeFontWeight(computedStyle.fontWeight || "400");
-  const fontStyle = computedStyle.fontStyle === "italic" ? "italic" : "normal";
+  const fontStyle = /^(italic|oblique)/i.test(computedStyle.fontStyle || "") ? "italic" : "normal";
   const fontSize = Math.max(1, parsePx(computedStyle.fontSize || "16px"));
 
   // Line Height

@@ -6,6 +6,7 @@ import {
   RGBAColor,
   SceneGraphDocument,
   SceneNode,
+  TextNode,
   SCHEMA_VERSION,
 } from "./types.js";
 
@@ -65,6 +66,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
     bounds,
     visible,
     opacity,
+    zIndex: typeof n.zIndex === 'number' ? n.zIndex : undefined,
     layoutPositioning: n.layoutPositioning === "ABSOLUTE" ? "ABSOLUTE" as const : "AUTO" as const,
     sizing: n.sizing && typeof n.sizing === 'object' ? {...n.sizing} : undefined,
     sourceTag: typeof n.sourceTag === "string" ? n.sourceTag : undefined,
@@ -101,7 +103,7 @@ export function validateNode(node: unknown, depth = 0, maxDepth = 100): SceneNod
       return {
         ...base,
         type: "TEXT",
-        textAutoResize: n.textAutoResize === 'HEIGHT' ? 'HEIGHT' : undefined,
+        textAutoResize: ['HEIGHT', 'WIDTH_AND_HEIGHT'].includes(n.textAutoResize as string) ? n.textAutoResize as TextNode['textAutoResize'] : undefined,
         characters,
         runs: Array.isArray(n.runs) ? n.runs.map((r:any)=>({start:r.start,end:r.end,style:r.style,fills:r.fills})) : undefined,
         fragments: Array.isArray(n.fragments) ? n.fragments.map((f: any) => ({ start: f.start, end: f.end, bounds: validateBounds(f.bounds) })) : undefined,
@@ -234,6 +236,7 @@ export function validateSceneGraph(jsonInput: unknown): ValidationResult {
     },
     root: validatedRoot,
     diagnostics,
+    fonts: Array.isArray(raw.fonts) ? raw.fonts.map(font=>({...font})) : undefined,
   };
 
   return {

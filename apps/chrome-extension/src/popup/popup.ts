@@ -12,6 +12,7 @@ const lists = [colorsList,typeList,assetsList,a11yList];
 let currentDocument: SceneGraphDocument | null = null;
 let busy = false, completed = false, restricted = false, revision = 0;
 let captureTab: number | null = null, requestId: string | null = null;
+let copyController: AbortController | null = null;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 function mode() { return document.querySelector<HTMLInputElement>('input[name="capture-mode"]:checked')?.value || 'VIEWPORT'; }
@@ -25,6 +26,7 @@ function setBusy(value: boolean, label?: string) {
   element<HTMLButtonElement>('btn-retry-capture').disabled = value || completed || restricted;
   btnCopyFigma.disabled = value || !currentDocument || hasDominantIframePlaceholder(currentDocument.root);
   element('capture-action-label').textContent = label || actionLabel();
+  if(value&&copyController&&!copyController.signal.aborted)element<HTMLButtonElement>('btn-cancel-capture').disabled=false;
   if(completed)element<HTMLButtonElement>('btn-done').disabled=false;
   for (const id of ['btn-download-json','btn-copy-svg','btn-download-design','btn-download-skill','btn-clear-capture']) element<HTMLButtonElement>(id).disabled = value || !currentDocument;
 }
@@ -144,8 +146,12 @@ async function initialize() {
 }
 async function performCopy(doc: SceneGraphDocument, tabId?: number) {
   if(hasDominantIframePlaceholder(doc.root))throw new Error('The embedded design is missing. Review the capture details below, then capture again.');
-  setBusy(true,'Preparing editable layers…');element('btn-cancel-capture').hidden=true;
-  const exported=await copyNativeCapture(doc);
+  setBusy(true,'Preparing editable layers…');
+  const controller=new AbortController();copyController=controller;
+  const cancel=element<HTMLButtonElement>('btn-cancel-capture');cancel.hidden=false;cancel.disabled=false;
+  let exported;
+  try{exported=await copyNativeCapture(doc,{signal:controller.signal,onClipboardWrite:()=>{copyController=null;cancel.hidden=true;element('capture-action-label').textContent='Copying to clipboard…';}});}
+  finally{copyController=null;cancel.hidden=true;}
   // Clipboard success and storage cleanup are distinct outcomes. A cleanup failure must
   // never be described as a failed copy, and another capture must never be deleted.
   let cleared: boolean;
@@ -189,6 +195,7 @@ btnCopyFigma.addEventListener('click',async()=>{
   finally{setBusy(false);}
 });
 element('btn-cancel-capture').addEventListener('click',async()=>{
+  if(copyController){copyController.abort();element<HTMLButtonElement>('btn-cancel-capture').disabled=true;element('capture-action-label').textContent='Cancelling export…';return;}
   if(captureTab===null)return;element<HTMLButtonElement>('btn-cancel-capture').disabled=true;element('capture-action-label').textContent='Cancelling…';
   try{await chrome.tabs.sendMessage(captureTab,{type:'CANCEL_CAPTURE'},{frameId:0});}catch{showNotice('error','Could not reach the page to cancel. Refresh it if capture does not stop.');}
 });

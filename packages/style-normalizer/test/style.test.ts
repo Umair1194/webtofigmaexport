@@ -201,3 +201,7 @@ describe('Rendered corner radius normalization',()=>{
     expect(parseCornerRadius('3.40282e+38px')?.topLeft).toBe(1e6);
   });
 });
+it('retains intermediate variable font weights and recognises oblique text',()=>{
+ expect(normalizeFontWeight('650')).toBe(650);
+ expect(parseTypography({fontFamily:'Lora',fontWeight:'650',fontStyle:'oblique 12deg',fontSize:'18px'}).fontStyle).toBe('italic');
+});
