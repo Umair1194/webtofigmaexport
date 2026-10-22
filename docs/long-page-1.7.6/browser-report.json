@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": {
+    "beyondOldLimit": true,
+    "fullHeight": true,
+    "productPromotion": true,
+    "afterPromotion": true,
+    "lastRow": true,
+    "finalSection": true,
+    "notTruncated": true
+  },
+  "elapsedMs": 3239.2999999821186,
+  "bounds": {
+    "x": 0,
+    "y": 0,
+    "width": 1280,
+    "height": 72276
+  },
+  "stats": {
+    "layers": 6015,
+    "text": 3005,
+    "autoLayout": 3010
+  },
+  "diagnostics": {
+    "totalNodesCaptured": 6015,
+    "totalTextNodes": 3005,
+    "totalImages": 0,
+    "totalVectors": 0,
+    "totalUnsupported": 0,
+    "durationMs": 353,
+    "warnings": [
+      "Full page captures currently loaded content; scroll to load lazy sections before capturing."
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 import { notifyRuntime } from "./runtime.js";
-import { MAX_CAPTURED_FONTS, MAX_TOTAL_FONT_BYTES, FrameNode, SceneGraphDocument, SceneNode, validateSceneGraph } from "@frameforge/scene-graph";
+import { DEFAULT_CAPTURE_NODES, MAX_CAPTURED_FONTS, MAX_TOTAL_FONT_BYTES, FrameNode, SceneGraphDocument, SceneNode, validateSceneGraph } from "@frameforge/scene-graph";
 
 export function collectFrames(target: Element) {
   const keys = new WeakMap<Element, string>();
@@ -36,7 +36,7 @@ export function registerFrameIdentityListener() {
   return () => window.removeEventListener("message", identify);
 }
 
-export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map<string, HTMLIFrameElement>, signal: AbortSignal, depth: number, maxNodes = 2500) {
+export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map<string, HTMLIFrameElement>, signal: AbortSignal, depth: number, maxNodes = DEFAULT_CAPTURE_NODES, mode: 'FULL_PAGE' | 'VIEWPORT' | 'SELECTED_ELEMENT' = 'VIEWPORT') {
   const slots: { parent: FrameNode; index: number; node: SceneNode }[] = [];
   const stack: SceneNode[] = [doc.root];
   while (stack.length) {
@@ -52,6 +52,10 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
     } catch (error) { warn("Embedded frame preparation failed: " + (error instanceof Error ? error.message : "extension unavailable")); }
   }
   const meaningful = slots.filter(slot => slot.node.bounds.width >= 2 && slot.node.bounds.height >= 2).length;
+  // A viewport-sized preview shell owns no long-page content itself. For Full page,
+  // export its dominant embedded document, rather than a viewport-height mask.
+  const previewShell = mode === 'FULL_PAGE' && meaningful === 1 &&
+    doc.root.bounds.height <= (doc.viewport?.height || doc.root.bounds.height) * 1.2;
   let captured = 0;
   for (const slot of slots) {
     if (signal.aborted) throw new Error("Capture cancelled.");
@@ -65,7 +69,8 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
     let unregisterAbort = () => {};
     let identifyTimer: ReturnType<typeof setInterval> | undefined;
     try {
-      const request = chrome.runtime.sendMessage({ type: "CAPTURE_CHILD_FRAME", token, maxNodes: remaining, depth: depth + 1 });
+      const fullPreview = previewShell && slot.node.bounds.width * slot.node.bounds.height >= doc.root.bounds.width * doc.root.bounds.height * .8;
+      const request = chrome.runtime.sendMessage({ type: "CAPTURE_CHILD_FRAME", token, maxNodes: remaining, depth: depth + 1, captureMode: fullPreview ? 'FULL_PAGE' : 'VIEWPORT' });
       const identify = () => frame.contentWindow?.postMessage({ type: "FRAMEFORGE_IDENTIFY_FRAME", token }, "*");
       identify(); identifyTimer = setInterval(identify, 150);
       const aborted = new Promise<never>((_, reject) => {
@@ -86,6 +91,12 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
       while (rename.length) { const node = rename.pop()!; node.id = token + ":" + node.id; if (node.type === "FRAME") rename.push(...node.children); }
       embedded.root.bounds.x = 0; embedded.root.bounds.y = 0;
       slot.parent.children[slot.index] = { ...slot.node, type: "FRAME", name: "Embedded preview", clipsContent: true, fills: [], children: [embedded.root] } as FrameNode;
+      if (fullPreview) {
+        doc.root = embedded.root;
+        doc.viewport = embedded.viewport;
+        // The outer preview chrome is intentionally replaced by the full design.
+        doc.diagnostics = {...embedded.diagnostics, warnings: [...embedded.diagnostics.warnings]};
+      }
       if(embedded.fonts?.length){
         doc.fonts??=[];
         for(const font of embedded.fonts)if(!doc.fonts.some(existing=>existing.family===font.family&&existing.weightMin===font.weightMin&&existing.weightMax===font.weightMax&&existing.style===font.style&&existing.dataUrl===font.dataUrl)){
@@ -93,11 +104,13 @@ export async function captureEmbeddedFrames(doc: SceneGraphDocument, frames: Map
           doc.fonts.push(font);
         }
       }
+      if (!fullPreview) {
       doc.diagnostics.totalNodesCaptured += embedded.diagnostics.totalNodesCaptured;
       doc.diagnostics.totalTextNodes += embedded.diagnostics.totalTextNodes;
       doc.diagnostics.totalImages += embedded.diagnostics.totalImages;
       doc.diagnostics.totalVectors += embedded.diagnostics.totalVectors;
       doc.diagnostics.totalUnsupported += embedded.diagnostics.totalUnsupported - 1;
+      }
       for (const warning of embedded.diagnostics.warnings) if (!doc.diagnostics.warnings.includes(warning)) doc.diagnostics.warnings.push(warning);
       captured++;
     } catch (error) {

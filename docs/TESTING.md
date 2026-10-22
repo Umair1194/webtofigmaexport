@@ -105,3 +105,5 @@ Large-page measurements and stress checks (1.7.2): see [PERFORMANCE_1.7.2.md](PE
 Responsive native export and cancellation (1.7.3): see [RESPONSIVENESS_1.7.3.md](RESPONSIVENESS_1.7.3.md). Stress checks now also abort native preparation before clipboard commit.
 
 Font matching (1.7.4): see [FONTS_1.7.4.md](FONTS_1.7.4.md). Use the quality server at /font-lab; add --font-cross-origin and open /font-lab-cross to exercise CORS-readable external stylesheets.
+
+Long-page completeness (1.7.6): run `npm run quality:serve`, open `/long-page-lab`, and click Verify full-page capture. All seven checks must pass, including the last row and final section beyond Product promotion. This exercises a viewport-height iframe and its internal scroll pane through production capture/composition/encoding. Chrome transport is mocked in this fixture; broker tests cover routing. Actual Figma paste evidence and scope are in [LONG_PAGE_1.7.6.md](LONG_PAGE_1.7.6.md).

@@ -120,6 +120,7 @@ export async function buildNativeClipboard(input: SceneGraphDocument, options: N
   const validation=validateSceneGraph(input);
   if(!validation.valid || !validation.document)throw new Error('Invalid capture: '+validation.errors.join('; '));
   const doc=validation.document;
+  if(doc.diagnostics.warnings.some(w=>w.includes('Reached maximum node capture limit')))throw new Error('This capture is incomplete because it reached the layer limit. Capture smaller sections instead of copying a partial page.');
   if(hasDominantIframePlaceholder(doc.root))throw new Error('Embedded preview was not captured. Review the capture details in FrameForge for the specific failure, then capture again.');
   await initCodec();
   await scheduler.checkpoint(true);

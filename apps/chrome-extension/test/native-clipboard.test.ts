@@ -242,3 +242,7 @@ it('stops an export cancelled during glyph serialization without writing the cli
  await expect(copyNativeCapture(capture,{signal:controller.signal})).rejects.toThrow('Export cancelled');
  expect(shaped).toBeGreaterThan(0);expect(shaped).toBeLessThan(250);expect(write).not.toHaveBeenCalled();
 });
+it('rejects previously saved captures whose node budget truncated the page',async()=>{
+ const capture=doc([text]);capture.diagnostics.warnings=['Reached maximum node capture limit; capture is partial.'];
+ await expect(buildNativeClipboard(capture)).rejects.toThrow('capture is incomplete');
+});

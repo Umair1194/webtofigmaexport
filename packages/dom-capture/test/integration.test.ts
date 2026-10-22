@@ -16,6 +16,29 @@ beforeEach(() => {
 });
 function child(tag = "div") { const el=win.document.createElement(tag); geometry(el,20,-100,200,50); win.document.body.append(el); return el; }
 describe("DOM capture integration", () => {
+  it('captures a long loaded page beyond the old capture limit',()=>{
+    geometry(win.document.body,0,0,800,60000);Object.defineProperty(win.document.documentElement,'scrollHeight',{value:60000});
+    const fragment=win.document.createDocumentFragment();
+    for(let i=0;i<3000;i++){const p=win.document.createElement('p');if(i===2999)p.textContent='Final section after Product promotion';geometry(p,0,i*20,700,20);fragment.append(p);}win.document.body.append(fragment);
+    const result=capturePage(win.document.body as any,{captureMode:'FULL_PAGE'});
+    expect(result.diagnostics.totalNodesCaptured).toBeGreaterThan(2500);
+    expect(result.diagnostics.warnings.join(' ')).not.toContain('maximum node capture limit');
+    expect(JSON.stringify(result.root)).toContain('Final section after Product promotion');
+    expect(validateSceneGraph(result).valid).toBe(true);
+  });
+  it('expands the main scroll pane and its ancestors only in full-page mode',()=>{
+    geometry(win.document.body,0,0,800,600);
+    const pane=child();geometry(pane,0,60,800,540);pane.style.cssText='overflow-y:auto;height:540px';
+    Object.defineProperties(pane,{clientHeight:{value:540},scrollHeight:{value:8000},scrollTop:{value:1000}});
+    const tail=win.document.createElement('div');geometry(tail,0,7000,800,60);pane.append(tail);
+    const full:any=capturePage(win.document.body as any,{captureMode:'FULL_PAGE'});
+    const expanded=full.root.children[0].children[0];
+    expect(expanded.bounds.height).toBe(8000);expect(expanded.children[0].bounds.y).toBe(7940);
+    expect(full.root.bounds.height).toBeGreaterThanOrEqual(8060);
+    const viewport:any=capturePage(win.document.body as any,{captureMode:'VIEWPORT'});
+    expect(viewport.root.children[0].children[0].bounds.height).toBe(540);
+    expect(viewport.root.bounds.height).toBe(600);
+  });
   it('retains sticky stacking priority and clips scrollable panes',()=>{
     const panel=child();panel.style.cssText='overflow-y:auto';
     const sticky=win.document.createElement('header');sticky.style.cssText='position:sticky;top:0;z-index:30';geometry(sticky,20,0,200,30);panel.append(sticky);

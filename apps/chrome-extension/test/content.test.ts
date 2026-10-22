@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const capture = vi.hoisted(() => vi.fn());
 const fetchImage = vi.hoisted(() => vi.fn());
 vi.mock("@frameforge/asset-pipeline", () => ({fetchImageAsDataUrl:fetchImage}));
-vi.mock("@frameforge/dom-capture", () => ({capturePageAsync:capture}));
+vi.mock("@frameforge/dom-capture", async importOriginal => ({...await importOriginal<typeof import('@frameforge/dom-capture')>(),capturePageAsync:capture}));
 let win: Window, listener: any, stored: any;
 beforeEach(async () => {
   vi.resetModules(); nativeCopy.mockReset().mockResolvedValue({warnings:[],stats:{layers:1,text:0,autoLayout:0}}); stored = null; capture.mockReset(); fetchImage.mockReset();
@@ -73,4 +73,10 @@ it('keeps copy success distinct from a failed saved-capture cleanup',async()=>{
   (chrome.runtime.sendMessage as any).mockImplementation(async(message:any)=>message.type==='CLEAR_SAVED_CAPTURE'?{status:'error',error:'Storage unavailable'}:original(message));
   const respond=vi.fn();listener({type:'EXECUTE_CAPTURE'},null,respond);await settle();
   expect(respond).toHaveBeenCalledWith(expect.objectContaining({status:'ok',copied:true}));expect(stored).not.toBeNull();expect(win.document.getElementById('frameforge-panel')!.textContent).toContain('could not be cleared');
+});
+it('does not save or auto-copy a page truncated at its layer budget',async()=>{
+  capture.mockResolvedValue({id:'partial',root:{type:'FRAME',children:[]},diagnostics:{totalNodesCaptured:12000,warnings:['Reached maximum node capture limit; capture is partial.'],durationMs:0}});
+  const respond=vi.fn();listener({type:'EXECUTE_CAPTURE',payload:{captureMode:'FULL_PAGE'}},null,respond);await settle();
+  expect(stored).toBeNull();expect(nativeCopy).not.toHaveBeenCalled();
+  expect(respond).toHaveBeenCalledWith(expect.objectContaining({status:'error',error:expect.stringContaining('incomplete page has not been saved')}));
 });

@@ -238,6 +238,11 @@ export interface CaptureDiagnostics {
   durationMs: number;
 }
 
+/** Shared ceiling across capture, embedded-frame transport and validation. */
+export const MAX_SCENE_NODES = 20000;
+export const DEFAULT_FULL_PAGE_NODES = 12000;
+export const DEFAULT_CAPTURE_NODES = 2500;
+
 export const MAX_CAPTURED_FONTS = 12;
 export const MAX_FONT_BYTES = 256 * 1024;
 export const MAX_TOTAL_FONT_BYTES = 1024 * 1024;

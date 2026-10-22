@@ -5,6 +5,11 @@ const token='fframe-12345678-1234-1234-1234-123456789012';
 beforeEach(async()=>{vi.resetModules();send=vi.fn(async()=>({status:"ok",document:{root:{}}}));vi.stubGlobal('chrome',{scripting:{executeScript:vi.fn(async()=>[])},runtime:{onMessage:{addListener:(fn:any)=>{dispatch=fn;}}},tabs:{sendMessage:send}});const {installFrameBroker}=await import('../src/background/frame-broker.js');installFrameBroker();});
 async function settle(){for(let i=0;i<15;i++)await Promise.resolve();}
 describe('Embedded-frame broker',()=>{
+  it('passes full-page mode and a larger bounded node budget to the preview',async()=>{
+    dispatch({type:'REGISTER_CAPTURE_FRAME',token},child,vi.fn());
+    dispatch({type:'CAPTURE_CHILD_FRAME',token,depth:1,captureMode:'FULL_PAGE',maxNodes:11950},parent,vi.fn());await settle();
+    expect(send).toHaveBeenCalledWith(7,{type:'CAPTURE_EMBEDDED_FRAME',payload:{captureMode:'FULL_PAGE',maxNodes:11950,frameDepth:1,autoCopy:false}},{frameId:12});
+  });
   it('routes capture to the identified child and returns content only via extension messaging',async()=>{
     const response=vi.fn();expect(dispatch({type:'CAPTURE_CHILD_FRAME',token,depth:1,maxNodes:100},parent,response)).toBe(true);
     dispatch({type:'REGISTER_CAPTURE_FRAME',token},child,vi.fn());await settle();

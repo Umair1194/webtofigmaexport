@@ -1,3 +1,4 @@
+import {DEFAULT_CAPTURE_NODES, DEFAULT_FULL_PAGE_NODES, MAX_SCENE_NODES} from '@frameforge/scene-graph';
 interface Identity { tabId: number; frameId: number }
 interface Job { owner: Identity; resolve: (identity: Identity) => void; reject: (error: Error) => void }
 const waiting = new Map<string, Job>();
@@ -46,9 +47,11 @@ export function installFrameBroker() {
         running.set(token, { owner, child });
         const depth = Number.isInteger(msg.depth) ? msg.depth : 5;
         if (depth > 4 || depth < 1) throw new Error("Embedded frame depth limit reached");
-        const maxNodes = Math.max(2, Math.min(2500, Number(msg.maxNodes) || 2500));
-        const capture = chrome.tabs.sendMessage(tabId, { type: "CAPTURE_EMBEDDED_FRAME", payload: { captureMode: "VIEWPORT", maxNodes, frameDepth: depth, autoCopy: false } }, { frameId: child.frameId });
-        const timeout = new Promise<never>((_, reject) => { captureTimer = setTimeout(() => { void chrome.tabs.sendMessage(tabId, { type: "CANCEL_CAPTURE" }, { frameId: child.frameId }).catch(() => {}); reject(new Error("Embedded preview capture timed out")); }, 20000); });
+        const captureMode = msg.captureMode === 'FULL_PAGE' ? 'FULL_PAGE' : 'VIEWPORT';
+        const requested = Number(msg.maxNodes);
+        const maxNodes = Math.max(2, Math.min(MAX_SCENE_NODES - 1, Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : captureMode === 'FULL_PAGE' ? DEFAULT_FULL_PAGE_NODES : DEFAULT_CAPTURE_NODES));
+        const capture = chrome.tabs.sendMessage(tabId, { type: "CAPTURE_EMBEDDED_FRAME", payload: { captureMode, maxNodes, frameDepth: depth, autoCopy: false } }, { frameId: child.frameId });
+        const timeout = new Promise<never>((_, reject) => { captureTimer = setTimeout(() => { void chrome.tabs.sendMessage(tabId, { type: "CANCEL_CAPTURE" }, { frameId: child.frameId }).catch(() => {}); reject(new Error("Embedded preview capture timed out")); }, captureMode === 'FULL_PAGE' ? 45000 : 20000); });
         respond(await Promise.race([capture, timeout]));
       } catch (error) { respond({ status: "error", error: error instanceof Error ? error.message : "Embedded preview unavailable" }); }
       finally { clearTimeout(identityTimer); clearTimeout(captureTimer); waiting.delete(token); running.delete(token); }

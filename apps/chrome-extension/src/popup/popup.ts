@@ -1,7 +1,7 @@
 import { copyNativeCapture } from '../clipboard/native.js';
 import { clearSavedCapture } from '../capture-store.js';
 import { SceneGraphDocument, validateSceneGraph } from '@frameforge/scene-graph';
-import { hasDominantIframePlaceholder, analyzeSceneGraph, generateDesignDoc, generateSkillDoc, sceneGraphToSvg } from '@frameforge/shared-protocol';
+import { captureIncompleteReason, hasDominantIframePlaceholder, analyzeSceneGraph, generateDesignDoc, generateSkillDoc, sceneGraphToSvg } from '@frameforge/shared-protocol';
 
 const element = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const btnRunCapture = element<HTMLButtonElement>('btn-run-capture');
@@ -24,7 +24,7 @@ function setBusy(value: boolean, label?: string) {
   element<HTMLFieldSetElement>('capture-options').disabled = value || completed;
   btnRunCapture.disabled = value || completed || restricted;
   element<HTMLButtonElement>('btn-retry-capture').disabled = value || completed || restricted;
-  btnCopyFigma.disabled = value || !currentDocument || hasDominantIframePlaceholder(currentDocument.root);
+  btnCopyFigma.disabled = value || !currentDocument || !!captureIncompleteReason(currentDocument);
   element('capture-action-label').textContent = label || actionLabel();
   if(value&&copyController&&!copyController.signal.aborted)element<HTMLButtonElement>('btn-cancel-capture').disabled=false;
   if(completed)element<HTMLButtonElement>('btn-done').disabled=false;
@@ -55,15 +55,16 @@ function displayCapturedDocument(doc: SceneGraphDocument) {
   element('capture-recorded').textContent=Number.isFinite(recorded.getTime())?'Saved '+recorded.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit'}):'Saved capture';
   const warnings=element('capture-warnings');warnings.replaceChildren();warnings.hidden=!doc.diagnostics.warnings.length;
   for(const warning of doc.diagnostics.warnings){const li=document.createElement('li');li.textContent=warning;warnings.appendChild(li);}
-  const incomplete=hasDominantIframePlaceholder(doc.root);
+  const reason=captureIncompleteReason(doc), incomplete=!!reason;
   resultSummary.classList.toggle('incomplete',incomplete);
-  element('result-status').textContent=incomplete?'Embedded design missing':'Ready to copy';
+  element('result-status').textContent=incomplete?(hasDominantIframePlaceholder(doc.root)?'Embedded design missing':'Capture incomplete'):'Ready to copy';
   element('result-recovery').hidden=!incomplete;
   btnCopyFigma.hidden=incomplete;
   element('btn-retry-capture').hidden=!incomplete;
   if(incomplete){
     resultSummary.querySelector('details')?.setAttribute('open','');
-    showNotice('warning','The embedded design is missing. Review the capture details below, then capture again.');
+    element('result-recovery').textContent=reason!;
+    showNotice('warning',reason!);
   }
   populateIntelligence(doc);setBusy(busy);
 }
@@ -145,7 +146,7 @@ async function initialize() {
   })()]);
 }
 async function performCopy(doc: SceneGraphDocument, tabId?: number) {
-  if(hasDominantIframePlaceholder(doc.root))throw new Error('The embedded design is missing. Review the capture details below, then capture again.');
+  const incompleteReason=captureIncompleteReason(doc);if(incompleteReason)throw new Error(incompleteReason);
   setBusy(true,'Preparing editable layers…');
   const controller=new AbortController();copyController=controller;
   const cancel=element<HTMLButtonElement>('btn-cancel-capture');cancel.hidden=false;cancel.disabled=false;

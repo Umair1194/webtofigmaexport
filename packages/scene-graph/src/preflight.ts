@@ -1,4 +1,4 @@
-import { MAX_CAPTURED_FONTS, MAX_FONT_BYTES, MAX_TOTAL_FONT_BYTES } from './types.js';
+import { MAX_SCENE_NODES, MAX_CAPTURED_FONTS, MAX_FONT_BYTES, MAX_TOTAL_FONT_BYTES } from './types.js';
 // Reject malformed nested fields before they can reach Figma API setters.
 export function preflightDocument(input: Record<string, unknown>): string[] {
   const errors: string[] = [];
@@ -49,7 +49,7 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
     const { node, path, depth } = stack.pop()!;
     if (!object(node)) { fail(path, "expected node"); continue; }
     if (seen.has(node)) { fail(path, "cyclic or repeated node"); break; } seen.add(node);
-    if (++count > 5000 || depth > 80) { fail(path, "node/depth budget exceeded"); break; }
+    if (++count > MAX_SCENE_NODES || depth > 80) { fail(path, "node/depth budget exceeded"); break; }
     enumeration(node.type, ["FRAME", "TEXT", "RECTANGLE", "IMAGE", "VECTOR", "LINE", "UNSUPPORTED"], `${path}.type`);
     if (!node.type) fail(path, "missing node type");
     enumeration(node.layoutPositioning, ["AUTO", "ABSOLUTE"], path + ".layoutPositioning");
@@ -140,7 +140,7 @@ export function preflightDocument(input: Record<string, unknown>): string[] {
     }
     if (assetBytes > 24 * 1024 * 1024 || textBytes > 2 * 1024 * 1024) { fail(path, "asset/text budget exceeded"); break; }
     if (node.type === "FRAME" && node.children !== undefined) {
-      if (!Array.isArray(node.children) || node.children.length > 5000) fail(`${path}.children`, "expected bounded children array");
+      if (!Array.isArray(node.children) || node.children.length > MAX_SCENE_NODES) fail(`${path}.children`, "expected bounded children array");
       else node.children.forEach((child: unknown, i: number) => stack.push({ node: child, path: `${path}.children[${i}]`, depth: depth + 1 }));
     }
   }

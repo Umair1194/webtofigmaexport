@@ -2,7 +2,9 @@
 
 The original audit is a historical snapshot. This document records the subsequent implementation and its limits.
 
-Latest release: [1.7.5 stacking and label sizing](STACKING_1.7.5.md): sticky headers, scroll-pane clipping, non-wrapping labels, actual Figma paste verification and 238 passing tests.
+Latest release: [1.7.6 full-page previews](LONG_PAGE_1.7.6.md): larger bounded capture budgets, full-height dominant previews, main scroll-pane expansion and real Figma verification of a 72,276px page.
+
+Previous release: [1.7.5 stacking and label sizing](STACKING_1.7.5.md): sticky headers, scroll-pane clipping, non-wrapping labels, actual Figma paste verification and 238 passing tests.
 
 Previous release: [1.7.4 web-font matching](FONTS_1.7.4.md): accessible original font data, mixed styles, variable weights, explicit fallbacks, actual Figma editing checks and 234 passing tests.
 

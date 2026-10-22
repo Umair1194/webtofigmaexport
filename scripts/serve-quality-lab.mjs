@@ -11,10 +11,12 @@ try {revision = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, env: {...
 const metadata = {revision, extensionVersion: JSON.parse(await fs.readFile(path.join(root, 'apps/chrome-extension/manifest.json'), 'utf8')).version};
 const bundle = await build({entryPoints: [path.join(root, 'fixtures/quality-lab.ts')], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', loader: {'.woff2': 'binary'}, define: {__QUALITY_BUILD__: JSON.stringify(metadata)}, alias: Object.fromEntries(['dom-capture', 'scene-graph', 'style-normalizer', 'shared-protocol', 'asset-pipeline'].map(name => ['@frameforge/' + name, path.join(root, 'packages', name, 'src/index.ts')]))});
 const fontBundle = await build({entryPoints:[path.join(root,'fixtures/font-lab.ts')],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',loader:{'.woff2':'binary'},alias:Object.fromEntries(['dom-capture','scene-graph','style-normalizer','shared-protocol','asset-pipeline'].map(name=>['@frameforge/'+name,path.join(root,'packages',name,'src/index.ts')]))});
+const longPageBundle = await build({entryPoints:[path.join(root,'fixtures/long-page-lab.ts')],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',loader:{'.woff2':'binary'},alias:Object.fromEntries(['dom-capture','scene-graph','style-normalizer','shared-protocol','asset-pipeline'].map(name=>['@frameforge/'+name,path.join(root,'packages',name,'src/index.ts')]))});
 if (process.argv.includes('--check')) {
   console.log('Quality lab browser bundle built successfully. No browser or Figma checks were run.');
 } else {
   const routes = new Map([
+    ['/long-page-lab', ['fixtures/long-page-lab.html','text/html; charset=utf-8']],
     ['/font-lab', ['fixtures/font-lab.html','text/html; charset=utf-8']],
     ...['RobotoMono','Lora','Lora-Italic'].map(name=>['/fonts/'+name+'.ttf',['fixtures/fonts/'+name+'.ttf','font/ttf']]),
     ['/', ['fixtures/quality-lab.html', 'text/html; charset=utf-8']],
@@ -26,6 +28,7 @@ if (process.argv.includes('--check')) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     if (req.method !== 'GET') {res.writeHead(405).end(); return;}
     if(req.url==='/font-lab.js'){res.setHeader('Content-Type','text/javascript');res.end(fontBundle.outputFiles[0].text);return;}
+    if(req.url==='/long-page-lab.js'){res.setHeader('Content-Type','text/javascript');res.end(longPageBundle.outputFiles[0].text);return;}
     if (req.url === '/lab.js') {res.setHeader('Content-Type', 'text/javascript'); res.end(bundle.outputFiles[0].text); return;}
     if(req.url==='/font-lab-cross'){
       const fontOrigin='http://127.0.0.1:'+((Number(process.env.FRAMEFORGE_LAB_PORT)||38479)+1);

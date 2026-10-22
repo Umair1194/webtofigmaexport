@@ -22,7 +22,7 @@ The regression suite covers capture bounds, element picking, cancellation, stora
 1. Open `chrome://extensions` in Chrome or the equivalent page in a Chromium browser.
 2. Enable Developer mode and choose **Load unpacked**.
 3. Select `apps/chrome-extension/dist`.
-4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.7.5 includes sticky-layer stacking, scroll-pane clipping, single-line label sizing, nested text styling, paragraph wrapping boxes, eligible content-driven sizing, oversized-corner normalization, clearer incomplete-capture recovery, faster repeated text exports, cooperative cancellable export, and accessible web-font matching; take a fresh capture to get these fixes. Saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
+4. After rebuilding, reload the extension and reload any test webpage to replace its existing content script. Version 1.7.6 adds full-page embedded previews and long scroll panes, and includes sticky-layer stacking, scroll-pane clipping, single-line label sizing, nested text styling, paragraph wrapping boxes, eligible content-driven sizing, oversized-corner normalization, clearer incomplete-capture recovery, faster repeated text exports, cooperative cancellable export, and accessible web-font matching; take a fresh capture to get these fixes. Saved captures still clear after copying. Existing host permissions support embedded-frame script preparation. Allow site access for the page and its preview origin (or all sites) in extension details.
 
 ## Optional legacy JSON importer
 
@@ -44,7 +44,7 @@ The Chrome manifest is only for Chrome. Plugin and extension outputs are now pac
 
 Figma handles placement and font availability when pasting. The extension reports capture/conversion warnings. The optional legacy importer continues to support JSON, cancellation and rollback.
 
-Capture is limited to 2,500 output nodes, depth 64, 2 MB per downloaded image, about 6 MB of embedded data URL characters and 8 MB of serialized JSON. Downloads use up to four concurrent requests, cache repeated URLs and time out; captures can be cancelled and have a 30-second overall deadline. The importer rejects invalid or oversized structures before creating layers.
+Full-page capture defaults to a 12,000-node traversal budget; visible-area and selected-element capture default to 2,500. Validation accepts up to 20,000 scene nodes. Capture is limited to depth 64, 2 MB per downloaded image, about 6 MB of embedded data URL characters and 8 MB of serialized JSON. Downloads use up to four concurrent requests, cache repeated URLs and time out; captures can be cancelled and have a 60-second full-page deadline (30 seconds for other modes). The importer rejects invalid or oversized structures before creating layers.
 
 ## Fidelity and privacy
 
@@ -57,6 +57,7 @@ Processing is local and no telemetry or account backend is implemented. Remote i
 ## Audit and verification
 
 - [Screenshot fidelity review — 1.6.0](docs/SCREENSHOT_REVIEW_1.6.0.md)
+- [Full-page capture and long previews — 1.7.6](docs/LONG_PAGE_1.7.6.md)
 - [Sticky layers and single-line labels — 1.7.5](docs/STACKING_1.7.5.md)
 - [Web-font matching and Figma verification — 1.7.4](docs/FONTS_1.7.4.md)
 - [Responsive export and cancellation — 1.7.3](docs/RESPONSIVENESS_1.7.3.md)

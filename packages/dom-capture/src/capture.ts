@@ -16,6 +16,7 @@ import {
   UnsupportedNode,
   VectorNode,
   ViewportMeta,
+  MAX_SCENE_NODES, DEFAULT_FULL_PAGE_NODES, DEFAULT_CAPTURE_NODES,
 } from "@frameforge/scene-graph";
 import {
   parseBackgroundImageUrl,
@@ -38,6 +39,13 @@ export interface CaptureOptions {
   includeHidden?: boolean;
   signal?: AbortSignal;
   frameKeys?: WeakMap<Element, string>;
+}
+
+export function captureNodeLimit(options: CaptureOptions): number {
+  const requested = Number(options.maxNodes);
+  return Number.isFinite(requested) && requested > 0
+    ? Math.min(MAX_SCENE_NODES - 1, Math.max(2, Math.floor(requested)))
+    : options.captureMode === 'FULL_PAGE' ? DEFAULT_FULL_PAGE_NODES : DEFAULT_CAPTURE_NODES;
 }
 
 export function generateLayerName(element: Element): string {
@@ -71,12 +79,12 @@ function* traverse(
   originX: number,
   originY: number,
   options: CaptureOptions,
-  state: { nodeCount: number; diagnostics: CaptureDiagnostics },
+  state: { nodeCount: number; diagnostics: CaptureDiagnostics; expanded: Set<string> },
   depth = 0
 ): Generator<void, SceneNode | null> {
   if (options.signal?.aborted) throw new Error("Capture cancelled.");
   if (depth > 64) { warn(state.diagnostics, "Deep content was truncated at 64 levels."); return null; }
-  if (state.nodeCount >= (options.maxNodes || 2500)) {
+  if (state.nodeCount >= captureNodeLimit(options)) {
     warn(state.diagnostics, "Reached maximum node capture limit; capture is partial.");
     return null;
   }
@@ -284,6 +292,7 @@ function* traverse(
 
   // 7. General container / element with children
   const children: SceneNode[] = [];
+  const stationary = new Set<string>();
 
   // Check CSS background-image url(...)
   const bgImageUrl = parseBackgroundImageUrl(computed.backgroundImage);
@@ -331,7 +340,7 @@ function* traverse(
   // Direct text nodes inside this element
   const sourceChildren = rootElement.shadowRoot ? rootElement.shadowRoot.childNodes : rootElement.childNodes;
   for (const childNode of Array.from(sourceChildren)) {
-    if (state.nodeCount >= (options.maxNodes || 2500)) { warn(state.diagnostics, "Reached maximum node capture limit; capture is partial."); break; }
+    if (state.nodeCount >= captureNodeLimit(options)) { warn(state.diagnostics, "Reached maximum node capture limit; capture is partial."); break; }
     if (childNode.nodeType === Node.TEXT_NODE) {
       const rawText = childNode.textContent || "";
       const normalized = normalizeCapturedText(rawText, computed.whiteSpace || "normal");
@@ -384,6 +393,7 @@ function* traverse(
       if (childSceneNode) {
         const childStyle = window.getComputedStyle(childNode as Element);
         const position = childStyle.position;
+        if (position === 'fixed' || position === 'sticky') stationary.add(childSceneNode.id);
         // Sticky geometry is already resolved at the captured scroll position.
         // Keep it out of reconstructed flow so it cannot move with the content below it.
         childSceneNode.layoutPositioning = ["absolute", "fixed", "sticky"].includes(position) ? "ABSOLUTE" : "AUTO";
@@ -394,6 +404,21 @@ function* traverse(
     }
   }
 
+  if (options.captureMode === 'FULL_PAGE') {
+    // Expand the main app scroll pane without scrolling/mutating the website.
+    // Small independent widgets and the navigation rail retain their viewport.
+    const pane = rootElement as HTMLElement;
+    const scrolls = [computed.overflow, computed.overflowY].some(v => ['auto', 'scroll'].includes(v));
+    if (scrolls && width >= window.innerWidth * .5 && height >= window.innerHeight * .4 && pane.scrollHeight > pane.clientHeight + 1) {
+      for (const child of children) if (!stationary.has(child.id)) child.bounds.y += pane.scrollTop;
+      bounds.height = Math.max(bounds.height, pane.scrollHeight + (parseFloat(computed.borderTopWidth)||0) + (parseFloat(computed.borderBottomWidth)||0));
+      state.expanded.add(id);
+    }
+    for (const child of children) if (state.expanded.has(child.id)) {
+      bounds.height = Math.max(bounds.height, child.bounds.y + child.bounds.height + (parseFloat(computed.paddingBottom)||0) + (parseFloat(computed.borderBottomWidth)||0));
+      state.expanded.add(id);
+    }
+  }
   if(computed.display==='contents'&&children.length){
     const left=Math.min(...children.map(c=>c.bounds.x)),top=Math.min(...children.map(c=>c.bounds.y));
     bounds.x+=left;bounds.y+=top;bounds.width=Math.max(...children.map(c=>c.bounds.x+c.bounds.width))-left;bounds.height=Math.max(...children.map(c=>c.bounds.y+c.bounds.height))-top;
@@ -461,7 +486,7 @@ function* captureDocument(
     durationMs: 0,
   };
 
-  const state = { nodeCount: 1, diagnostics };
+  const state = { nodeCount: 1, diagnostics, expanded: new Set<string>() };
 
   let originX = 0;
   let originY = 0;
@@ -495,7 +520,7 @@ function* captureDocument(
   const selectedBounds = targetElement.getBoundingClientRect();
 
   const rootWidth = mode === "SELECTED_ELEMENT" ? selectedBounds.width : mode === "FULL_PAGE" ? docWidth : window.innerWidth;
-  const rootHeight = mode === "SELECTED_ELEMENT" ? selectedBounds.height : mode === "FULL_PAGE" ? docHeight : window.innerHeight;
+  const rootHeight = mode === "SELECTED_ELEMENT" ? selectedBounds.height : mode === "FULL_PAGE" ? Math.max(docHeight, rootSceneNode ? rootSceneNode.bounds.y + rootSceneNode.bounds.height : 0) : window.innerHeight;
 
   if (mode === "FULL_PAGE") warn(diagnostics, "Full page captures currently loaded content; scroll to load lazy sections before capturing.");
   const rootFrame: FrameNode = {
@@ -538,7 +563,7 @@ function warn(diagnostics: CaptureDiagnostics, message: string) {
   if (!diagnostics.warnings.includes(message)) diagnostics.warnings.push(message);
 }
 function reserveNode(state: { nodeCount: number; diagnostics: CaptureDiagnostics }, options: CaptureOptions) {
-  if (state.nodeCount >= (options.maxNodes || 2500)) { warn(state.diagnostics, "Reached maximum node capture limit; capture is partial."); return false; }
+  if (state.nodeCount >= captureNodeLimit(options)) { warn(state.diagnostics, "Reached maximum node capture limit; capture is partial."); return false; }
   state.nodeCount++; return true;
 }
 function serializeSvg(svg: SVGSVGElement): string {

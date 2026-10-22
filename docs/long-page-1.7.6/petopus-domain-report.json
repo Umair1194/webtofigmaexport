@@ -1,0 +1,106 @@
+{
+  "checks": {
+    "Breeder": true,
+    "Build from the base": true,
+    "Community primitives": true,
+    "Content post cards": true,
+    "Financial and fee breakdown": true,
+    "Health and vaccination": true,
+    "Pet and care management": true,
+    "Product promotion": true,
+    "Professional trust surfaces": true,
+    "Temporary live service sharing": true,
+    "Virtual queue": true
+  },
+  "current": {
+    "bounds": {
+      "height": 21196,
+      "width": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "diagnostics": {
+      "durationMs": 176,
+      "totalImages": 16,
+      "totalNodesCaptured": 4283,
+      "totalTextNodes": 1106,
+      "totalUnsupported": 0,
+      "totalVectors": 267,
+      "warnings": [
+        "CSS transforms are captured with axis-aligned bounds; rotated content may differ.",
+        "CSS filters are not reproduced in editable layers.",
+        "Full page captures currently loaded content; scroll to load lazy sections before capturing."
+      ]
+    },
+    "lastTexts": [
+      "Data & operations",
+      "Shells & layout",
+      "Mobile component sets",
+      "Accessibility & interaction",
+      "Responsive QA matrix",
+      "Product guidance",
+      "Deprecated and migration",
+      "Product architecture",
+      "Platform records",
+      "Documentation",
+      "Collapse",
+      "Collapse navigation"
+    ],
+    "stats": {
+      "autoLayout": 2767,
+      "layers": 5222,
+      "text": 1106
+    }
+  },
+  "elapsedMs": 2558.7000000178814,
+  "nativeWarnings": [
+    "CSS transforms are captured with axis-aligned bounds; rotated content may differ.",
+    "CSS filters are not reproduced in editable layers.",
+    "Full page captures currently loaded content; scroll to load lazy sections before capturing.",
+    "Preserved web font Plus Jakarta Sans. Make it available in Figma to edit without font substitution.",
+    "Preserved web font Plus Jakarta Sans SemiBold. Make it available in Figma to edit without font substitution.",
+    "Missing image or unsupported element: Image .h-full",
+    "Substituted Plus Jakarta Sans 400 with Inter: matching web-font data was unavailable, unsupported, or missing required glyphs. Wrapping may differ after editing.",
+    "Preserved measured positions for overlapping or irregular content: Paragraph",
+    "Preserved measured positions for overlapping or irregular content: div.mt-auto",
+    "Some text uses approximate line positions (legacy capture or generated/form text). Recapture ordinary page text for accurate inline wrapping.",
+    "Some characters are unavailable in the selected export font: 5★",
+    "Some characters are unavailable in the selected export font: 4★",
+    "Some characters are unavailable in the selected export font: 3★",
+    "Some characters are unavailable in the selected export font: 2★",
+    "Some characters are unavailable in the selected export font: 1★"
+  ],
+  "old": {
+    "diagnostics": {
+      "durationMs": 93,
+      "totalImages": 9,
+      "totalNodesCaptured": 2488,
+      "totalTextNodes": 650,
+      "totalUnsupported": 0,
+      "totalVectors": 157,
+      "warnings": [
+        "CSS transforms are captured with axis-aligned bounds; rotated content may differ.",
+        "CSS filters are not reproduced in editable layers.",
+        "Reached maximum node capture limit; capture is partial.",
+        "Full page captures currently loaded content; scroll to load lazy sections before capturing."
+      ]
+    },
+    "lastTexts": [
+      "Product claims come from the brand; no prices or baskets.",
+      "Virtual queue",
+      "Scheduled appointments and live walk-ins are peers. Every queue state pairs an icon and a word with its colour.",
+      "Queue states",
+      "Checked in",
+      "On hold",
+      "Called",
+      "In service",
+      "Completed",
+      "No show"
+    ]
+  },
+  "passed": true,
+  "viewport": {
+    "height": 720,
+    "width": 1280
+  }
+}

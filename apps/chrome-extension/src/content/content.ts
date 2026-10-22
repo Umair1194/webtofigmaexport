@@ -4,7 +4,7 @@ import { saveCapture, clearSavedCapture } from "../capture-store.js";
 import { copyCaptureInPage } from "../clipboard/client.js";
 import { collectFrames, captureEmbeddedFrames, registerFrameIdentityListener } from "./frames.js";
 import { loadCaptureImage } from "./images.js";
-import { capturePageAsync, CaptureOptions } from "@frameforge/dom-capture";
+import { capturePageAsync, captureNodeLimit, CaptureOptions } from "@frameforge/dom-capture";
 import { SceneGraphDocument, SceneNode } from "@frameforge/scene-graph";
 import { checkWCAGCompliance, parseColor, rgbaToHex } from "@frameforge/style-normalizer";
 
@@ -72,7 +72,8 @@ if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
     const started = performance.now();
     const reportStage = (stage: string) => { if (!embedded && options.requestId) void notifyRuntime({type:'CAPTURE_PROGRESS',requestId:options.requestId,stage}); };
     let timedOut = false, copied = false;
-    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
+    const captureTimeout = options.captureMode === 'FULL_PAGE' ? 60000 : 30000;
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, captureTimeout);
     if (!embedded) showPanel("Capturing editable layers…", [{ label: "Cancel", run: () => controller.abort() }]);
     try {
       reportStage('Waiting for web fonts…');
@@ -81,12 +82,13 @@ if (!(window as any).__FRAMEFORGE_INITIALIZED__) {
       const frameInfo = collectFrames(target);
       const doc = await capturePageAsync(target, { ...options, frameKeys: frameInfo.keys, signal: controller.signal, inferAutoLayout: true, redactForms: true });
       if(!fontsReady)doc.diagnostics.warnings.push('Web fonts were still loading when captured. Recapture after the page settles for reliable wrapping.');
-      await captureEmbeddedFrames(doc, frameInfo.frames, controller.signal, options.frameDepth || 0, options.maxNodes || 2500);
+      await captureEmbeddedFrames(doc, frameInfo.frames, controller.signal, options.frameDepth || 0, captureNodeLimit(options), options.captureMode);
+      if (doc.diagnostics.warnings.some(w => w.includes('Reached maximum node capture limit'))) throw new Error('This page exceeds the capture layer limit. Capture smaller sections; the incomplete page has not been saved.');
       if (!embedded) showPanel("Embedding images…", [{ label: "Cancel", run: () => controller.abort() }]);
       reportStage('Adding images…');
       await inlineAssets(doc, controller.signal);
       reportStage('Matching web fonts…');await captureFonts(doc,controller.signal);
-      if (controller.signal.aborted) throw new Error(timedOut ? "Capture timed out after 30 seconds. Select a smaller section." : "Capture cancelled.");
+      if (controller.signal.aborted) throw new Error(timedOut ? `Capture timed out after ${captureTimeout / 1000} seconds. Select a smaller section.` : "Capture cancelled.");
       doc.diagnostics.durationMs = Math.round(performance.now() - started);
       // Chrome storage quota is measured in bytes, not JS UTF-16 characters.
       if (new TextEncoder().encode(JSON.stringify(doc)).byteLength > 8 * 1024 * 1024) throw new Error("Capture exceeds 8 MB. Select a smaller section.");

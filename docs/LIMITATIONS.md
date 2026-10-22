@@ -6,7 +6,7 @@ FrameForge converts supported DOM geometry and CSS into editable Figma nodes. Ar
 
 - Internal browser pages and extension-store pages cannot be captured. File URLs need the browser's explicit extension file-access setting.
 - Full page means currently loaded DOM content. Lazy or virtualized sections must be loaded first. It does not crawl other responsive/device states.
-- Output is bounded to 2,500 nodes and 64 levels. Truncation is reported. Captures have a 30-second deadline and a cancel action.
+- Full-page traversal defaults to 12,000 nodes; other modes default to 2,500. Validation caps complete scenes at 20,000 nodes. Depth remains 64. Node-truncated captures cannot be copied as complete pages. Full-page capture has a 60-second deadline; other modes have 30 seconds, with cancellation throughout. The 8 MB transport limit still applies.
 - Viewport output clips to the visible browser frame; the traversal may retain offscreen descendants in the editable hierarchy.
 - Shadow-root children are captured, but distributed slot behavior is not fully reproduced. Embedded frames are captured when Chrome permits extension access, with up to four nested frame captures and a shared node budget. Inaccessible frames remain placeholders; reload existing tabs after updating the extension.
 - Canvas snapshots and video posters are imported when accessible. Tainted canvases and inaccessible media remain placeholders.

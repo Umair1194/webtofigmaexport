@@ -6,6 +6,25 @@ function document(){return {schemaVersion:'1.0.0',root:{id:'root',name:'Root',ty
 let win:Window;
 beforeEach(()=>{win=new Window();vi.stubGlobal('window',win);});
 describe('Embedded content composition',()=>{
+  it('exports the complete dominant preview instead of clipping it to the outer iframe height',async()=>{
+    const main=document(),embedded=document(),key='fframe-12345678-1234-1234-1234-123456789012';
+    embedded.root.bounds={...box,height:16000};embedded.diagnostics.totalNodesCaptured=6000;
+    main.viewport={width:300,height:200};
+    main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'iframe',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1,attributes:{frameKey:key}}];
+    const send=vi.fn(async()=>({status:'ok',document:embedded}));vi.stubGlobal('chrome',{runtime:{sendMessage:send}});
+    await captureEmbeddedFrames(main,new Map([[key,{contentWindow:{postMessage:vi.fn()}} as any]]),new AbortController().signal,0,12000,'FULL_PAGE');
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({type:'CAPTURE_CHILD_FRAME',captureMode:'FULL_PAGE',maxNodes:11999}));
+    expect(main.root.bounds.height).toBe(16000);expect(main.root.children).toEqual([]);
+    expect(main.diagnostics.totalNodesCaptured).toBe(6000);
+  });
+  it('keeps ordinary iframe widgets viewport-clipped in full-page captures',async()=>{
+    const main=document(),embedded=document(),key='fframe-12345678-1234-1234-1234-123456789012';main.root.bounds={...box,height:4000};main.viewport={width:300,height:200};
+    main.root.children=[{id:'iframe',type:'UNSUPPORTED',name:'widget',reason:'CROSS_ORIGIN_IFRAME',bounds:box,visible:true,opacity:1,attributes:{frameKey:key}}];
+    const send=vi.fn(async()=>({status:'ok',document:embedded}));vi.stubGlobal('chrome',{runtime:{sendMessage:send}});
+    await captureEmbeddedFrames(main,new Map([[key,{contentWindow:{postMessage:vi.fn()}} as any]]),new AbortController().signal,0,12000,'FULL_PAGE');
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({type:'CAPTURE_CHILD_FRAME',captureMode:'VIEWPORT'}));
+    expect(main.root.bounds.height).toBe(4000);expect(main.root.children[0].clipsContent).toBe(true);
+  });
   it('replaces an iframe placeholder with editable child content without posting captured data to the page',async()=>{
     const main=document(),embedded=document();embedded.root.children=[{id:'text',name:'Text',type:'TEXT',bounds:box,characters:'Preview content',style:{fontFamily:'Inter',fontWeight:400,fontSize:16},fills:[]}];embedded.diagnostics.totalNodesCaptured=2;embedded.diagnostics.totalTextNodes=1;
     const frame:any={contentWindow:{postMessage:vi.fn()}};const key='fframe-12345678-1234-1234-1234-123456789012';

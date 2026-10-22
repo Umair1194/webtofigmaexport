@@ -59,3 +59,10 @@ export function hasDominantIframePlaceholder(root: import("@frameforge/scene-gra
   }
   return false;
 }
+
+export function captureIncompleteReason(doc: SceneGraphDocument): string | undefined {
+  if (doc.diagnostics.warnings.some(w => w.includes('Reached maximum node capture limit')))
+    return 'The capture reached its layer limit and is incomplete. Capture smaller sections instead of copying a partial page.';
+  if (hasDominantIframePlaceholder(doc.root))
+    return 'The embedded design is missing. Review the capture details below, then capture again.';
+}

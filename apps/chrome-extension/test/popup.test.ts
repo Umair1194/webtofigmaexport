@@ -136,3 +136,10 @@ it('stops offering cancellation once the clipboard write has begun',async()=>{
  ui.click('btn-copy-figma');await settle();expect(ui.win.document.getElementById('btn-cancel-capture')!.hidden).toBe(true);
  ui.click('btn-cancel-capture');expect(signal!.aborted).toBe(false);finish(exported);await settle();expect(ui.state.saved).toBeNull();
 });
+it('does not advertise an older node-limited saved page as complete',async()=>{
+  const partial=documentCapture();partial.diagnostics.warnings=['Reached maximum node capture limit; capture is partial.'];
+  const ui=await setup({saved:partial});
+  expect(ui.win.document.getElementById('result-status')!.textContent).toBe('Capture incomplete');
+  expect(ui.win.document.getElementById('btn-copy-figma')!.hidden).toBe(true);
+  ui.click('btn-copy-figma');await settle();expect(nativeCopy).not.toHaveBeenCalled();expect(ui.state.saved).not.toBeNull();
+});
